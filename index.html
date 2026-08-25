@@ -1,0 +1,1102 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STWP Bullish Screener</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:#263432;font-family:Arial,Helvetica,sans-serif}
+.topbar{background:#123f35;color:#fff;padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand{font-size:23px;font-weight:800;margin-right:auto}
+.btn{border:0;border-radius:7px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:#17483c}
+.btn.process{background:#f2c94c;color:#263432}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.status,.file-name{font-size:13px}
+.search-wrap{padding:12px 18px;border-bottom:1px solid #e5e9e7;display:flex;gap:10px;align-items:center}
+.search{width:300px;max-width:100%;padding:9px 12px;border:1px solid #cfd8d4;border-radius:7px;font-size:13px}
+.table-wrap{overflow:auto;padding:0 12px 20px}
+table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-size:13px}
+th,td{height:36px;padding:7px 9px;border-right:1px solid #e6ebe8;border-bottom:1px solid #e6ebe8;text-align:center;white-space:nowrap;background:#fff}
+th:first-child,td:first-child{position:sticky;left:0;z-index:3;min-width:230px;text-align:left;background:#fff;font-weight:800}
+.stock-row th{background:#f1f6f3}
+.section th{background:#eef7f3;color:#23483d;font-size:13px}
+tbody tr:nth-child(odd) td{background:#fbfdfc}
+tbody tr:nth-child(even) td{background:#f5f9f7}
+tbody tr:first-child th,tbody tr:nth-child(2) th{background:#fff}
+
+.chip{display:inline;font-weight:700;font-size:13px;background:transparent;padding:0;border-radius:0}
+.dash{color:#aeb7b3}
+.num{font-weight:700;color:#1e5870}
+.pivot{color:#7a4a9b;font-weight:700}
+.score-row th{background:#f4eaff;font-weight:800;white-space:nowrap}
+.score-row th:not(:first-child){border-bottom:3px solid #8e44ad}
+.score-value{font-weight:900;color:#7b3fb5;font-size:14px}
+.stock-row th{background:#e8f4ff!important;color:#155a82}
+.stock-link{color:#155a82;text-decoration:none;font-weight:900;cursor:pointer}
+.stock-link:hover{text-decoration:underline}
+.row-label{font-weight:800}
+
+.stock-link{color:#185a80;text-decoration:underline;font-weight:800;cursor:pointer}
+.close{color:#185a80;font-weight:800}
+.entry{color:#7b3fb5;font-weight:800}
+.sl{color:#a05b00;font-weight:800}
+.empty{padding:70px 20px;text-align:center;color:#7a8581}
+@media(max-width:700px){.brand{width:100%}th,td{padding:6px 6px;font-size:13px}th:first-child,td:first-child{min-width:190px}}
+.combined-row th{color:#6b4a00;background:#fff}
+.combined-row td{font-weight:700}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">🚀 STWP Bullish Screener</div>
+  <label class="btn" for="csvFile">📂 Upload CSV</label>
+  <input id="csvFile" type="file" accept=".csv,text/csv" hidden>
+  <button id="processBtn" class="btn process" disabled>⚡ Process</button>
+  <span id="status" class="status">No file selected</span>
+  <span id="fileName" class="file-name"></span>
+</div>
+<div class="search-wrap">
+  <input id="search" class="search" type="search" placeholder="🔍 Search stock name or symbol...">
+  <span id="count"></span>
+</div>
+<div class="table-wrap">
+  <div id="empty" class="empty">Upload your CSV and click <b>Process</b>.</div>
+  <table id="matrix" style="display:none"><thead></thead><tbody></tbody></table>
+</div>
+
+<script>
+const INITIAL_RAW=[{"Date":"25th Aug'26 3:14:00","Symbol":"ADANIENT","Today open":"2998","Today high":"3110","Today low":"2962.5","Today close":"3110","1d ago open":"3010","1d ago high":"3019.8","1d ago  low":"2971.5","1d ago  close":"2998.6","2d ago  open":"2995","2d ago  high":"3007.5","2d ago  low":"2981","2d ago  close":"2997","3d ago  open":"3000","3d ago  high":"3011","3d ago  low":"2990","3d ago  close":"2994.9","4d ago  open":"3012.7","4d ago  high":"3019","4d ago  low":"2967.3","4d ago  close":"2990.3","Volume":"2045161","Volume 5 sma":"1066648.6","Volume 7 sma":"999519.29","Volume 10 sma":"1112679.9","Volume 20 sma":"1065065.1","Volume 30 sma":"1067545.2","Vol x 5d":"2.55","Vol x 7d":"2.16","Vol x 10d":"1.95","Vol x 20d":"2.01","Vol x 30d":"1.92","Ema 9":"3023.5","1 day ago ema 9":"3001.87","Ema 20":"3026.89","1 day ago ema 20":"3018.14","Ema 50":"2988.54","1 day ago ema 50":"2983.58","Ema 100":"2832.18","1 day ago ema 100":"2826.57","Ema 200":"2653.72","1 day ago ema 200":"2649.13","Rsi":"60.94","Macd":"5.79","Adx":"17.52","Bullish trend strength":"-4.36","Vwap":"3038.97","Cci":"133.78","Stochastic":"100","Candle body strength":"75.93","100 %bull - atr 5 > 8":"1","100 %bull - atr rising":"1","Alphatrend - buy marker":"0","Alphatrend line":"2842.44","Avg_true_range":"64.82","Stop loss":"2959.26"},{"Date":"25th Aug'26 3:14:00","Symbol":"ADANIPORTS","Today open":"1674","Today high":"1702.7","Today low":"1671","Today close":"1702.7","1d ago open":"1700","1d ago high":"1700","1d ago  low":"1672.1","1d ago  close":"1672.1","2d ago  open":"1697.2","2d ago  high":"1702","2d ago  low":"1684.9","2d ago  close":"1700","3d ago  open":"1690","3d ago  high":"1698.5","3d ago  low":"1680.4","3d ago  close":"1696","4d ago  open":"1684","4d ago  high":"1684","4d ago  low":"1667","4d ago  close":"1681.9","Volume":"1315898","Volume 5 sma":"1273880.2","Volume 7 sma":"1323111.86","Volume 10 sma":"1472748.3","Volume 20 sma":"2154747.6","Volume 30 sma":"1960435.9","Vol x 5d":"1.04","Vol x 7d":"0.928","Vol x 10d":"0.84","Vol x 20d":"0.604","Vol x 30d":"0.668","Ema 9":"1690.13","1 day ago ema 9":"1686.99","Ema 20":"1704.22","1 day ago ema 20":"1704.38","Ema 50":"1730.31","1 day ago ema 50":"1731.44","Ema 100":"1700.79","1 day ago ema 100":"1700.75","Ema 200":"1619.77","1 day ago ema 200":"1618.94","Rsi":"46.99","Macd":"5.26","Adx":"26.65","Bullish trend strength":"11.54","Vwap":"1684.8","Cci":"20.46","Stochastic":"94.97","Candle body strength":"90.54","100 %bull - atr 5 > 8":"0","100 %bull - atr rising":"1","Alphatrend - buy marker":"0","Alphatrend line":"1628.73","Avg_true_range":"27.81","Stop loss":"1669.61"},{"Date":"25th Aug'26 3:14:00","Symbol":"ADANIENSOL","Today open":"1554.9","Today high":"1594.5","Today low":"1532","Today close":"1594.5","1d ago open":"1543.9","1d ago high":"1562","1d ago  low":"1527","1d ago  close":"1555.1","2d ago  open":"1556.9","2d ago  high":"1559.5","2d ago  low":"1527.3","2d ago  close":"1541.9","3d ago  open":"1550","3d ago  high":"1561","3d ago  low":"1538.6","3d ago  close":"1548.5","4d ago  open":"1604.8","4d ago  high":"1604.8","4d ago  low":"1536.5","4d ago  close":"1540.7","Volume":"2011323","Volume 5 sma":"2345203.4","Volume 7 sma":"2290981.43","Volume 10 sma":"2798968.7","Volume 20 sma":"2084101.4","Volume 30 sma":"2249866.37","Vol x 5d":"0.837","Vol x 7d":"0.668","Vol x 10d":"0.713","Vol x 20d":"0.945","Vol x 30d":"0.891","Ema 9":"1578.08","1 day ago ema 9":"1573.98","Ema 20":"1599.44","1 day ago ema 20":"1599.96","Ema 50":"1578.64","1 day ago ema 50":"1578","Ema 100":"1472.22","1 day ago ema 100":"1469.75","Ema 200":"1305.91","1 day ago ema 200":"1303.01","Rsi":"48.35","Macd":"-7.53","Adx":"16.98","Bullish trend strength":"1.1","Vwap":"1562.06","Cci":"-76.11","Stochastic":"46.55","Candle body strength":"63.36","100 %bull - atr 5 > 8":"0","100 %bull - atr rising":"1","Alphatrend - buy marker":"0","Alphatrend line":"1423.24","Avg_true_range":"46.09","Stop loss":"1529.7"},{"Date":"25th Aug'26 3:14:00","Symbol":"ADANIGREEN","Today open":"1294.8","Today high":"1330","Today low":"1294.8","Today close":"1330","1d ago open":"1319.9","1d ago high":"1319.9","1d ago  low":"1298.1","1d ago  close":"1308","2d ago  open":"1310.2","2d ago  high":"1324.9","2d ago  low":"1310.1","2d ago  close":"1320","3d ago  open":"1294","3d ago  high":"1310.3","3d ago  low":"1294","3d ago  close":"1301.8","4d ago  open":"1312.9","4d ago  high":"1312.9","4d ago  low":"1281.1","4d ago  close":"1293","Volume":"2428751","Volume 5 sma":"1336143.8","Volume 7 sma":"1193002","Volume 10 sma":"1325946.7","Volume 20 sma":"1490369.05","Volume 30 sma":"2123113.8","Vol x 5d":"2.35","Vol x 7d":"2.42","Vol x 10d":"1.73","Vol x 20d":"1.66","Vol x 30d":"1.1","Ema 9":"1323.61","1 day ago ema 9":"1322.01","Ema 20":"1352.28","1 day ago ema 20":"1354.62","Ema 50":"1385.88","1 day ago ema 50":"1388.16","Ema 100":"1335.15","1 day ago ema 100":"1335.25","Ema 200":"1240.33","1 day ago ema 200":"1239.43","Rsi":"41.85","Macd":"1.47","Adx":"22.47","Bullish trend strength":"5.61","Vwap":"1319.64","Cci":"-70.05","Stochastic":"36.25","Candle body strength":"100","100 %bull - atr 5 > 8":"0","100 %bull - atr rising":"0","Alphatrend - buy marker":"0","Alphatrend line":"1260.18","Avg_true_range":"31.47","Stop loss":"1293.23"}];
+let rawData=[];
+let selectedFile=null;
+
+const fileInput=document.getElementById('csvFile');
+const processBtn=document.getElementById('processBtn');
+const status=document.getElementById('status');
+const fileName=document.getElementById('fileName');
+const search=document.getElementById('search');
+const count=document.getElementById('count');
+const empty=document.getElementById('empty');
+const table=document.getElementById('matrix');
+const tbody=table.querySelector('tbody');
+
+function norm(s){return String(s??'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+function field(r,name){const k=Object.keys(r).find(x=>norm(x)===norm(name));return k===undefined?'':r[k]}
+function num(r,name){const x=parseFloat(String(field(r,name)).replace(/,/g,'').replace(/₹/g,''));return Number.isFinite(x)?x:NaN}
+function stock(r){return String(field(r,'Symbol')||field(r,'Stock Name')||field(r,'Name')||'').trim()}
+function fmt(x){return Number.isFinite(x)?x.toLocaleString('en-IN',{maximumFractionDigits:2}):'—'}
+function chip(t,tip){return `<span class="chip" title="${tip}">${t}</span>`}
+function yes(t,tip){return chip(t,tip)}
+function dash(){return '<span class="dash">—</span>'}
+
+function calculate(r){
+  const o=num(r,'Today open'),h=num(r,'Today high'),l=num(r,'Today low'),c=num(r,'Today close');
+  const po=num(r,'1d ago open'),ph=num(r,'1d ago high'),pl=num(r,'1d ago low'),pc=num(r,'1d ago close');
+  const p2o=num(r,'2d ago open'),p2c=num(r,'2d ago close');
+  const vol=num(r,'Volume'),v20=num(r,'Volume 20 SMA'),ema9=num(r,'EMA 9'),ema20=num(r,'EMA 20'),ema50=num(r,'EMA 50'),ema100=num(r,'EMA 100'),ema200=num(r,'EMA 200');
+  const e9p=num(r,'1d ago EMA 9'),e20p=num(r,'1d ago EMA 20'),e50p=num(r,'1d ago EMA 50'),e100p=num(r,'1d ago EMA 100'),e200p=num(r,'1d ago EMA 200');
+  const rsi=num(r,'RSI'),macd=num(r,'MACD'),cci=num(r,'CCI'),st=num(r,'Stochastic'),adx=num(r,'ADX'),vwap=num(r,'VWAP'),atr=num(r,'ATR'),cbs=num(r,'Candle Body Strength'),alpha=num(r,'AlphaTrend Buy Marker'),alphaLine=num(r,'AlphaTrend Line');
+  const range=h-l, body=Math.abs(c-o), lower=Math.min(o,c)-l, upper=h-Math.max(o,c);
+  const bullish=c>o, prevBear=pc<po;
+  const engulf=bullish&&prevBear&&c>=po&&o<=pc;
+  const hammer=bullish&&body>0&&lower>=2*body&&upper<=body;
+  const piercing=bullish&&prevBear&&o<pc&&c>(po+pc)/2&&c<po;
+  const morning=p2c<p2o&&Math.abs(po-pc)<Math.abs(p2o-p2c)*.6&&bullish&&c>(p2o+p2c)/2;
+  const tweezer=Math.abs(l-pl)/Math.max(Math.abs(pl),1)<.003&&bullish;
+  const hh=h>ph,hl=l>pl;
+  const pivot=(ph+pl+pc)/3,r1=2*pivot-pl,r2=pivot+(ph-pl),r3=ph+2*(pivot-pl),s1=2*pivot-ph,s2=pivot-(ph-pl),s3=pl-2*(ph-pivot);
+  return {
+    o,h,l,c,sl:field(r,'Stop loss'),range,body,lower,upper,atr,vol,v20,rsi,macd,cci,st,adx,vwap,alpha,alphaLine,cbs,
+    bullish,engulf,hammer,piercing,morning,tweezer,hh,hl,highBreak:hh,
+    closeE9:c>ema9,closeE20:c>ema20,closeE50:c>ema50,closeE100:c>ema100,closeE200:c>ema200,
+    e920:ema9>ema20,e2050:ema20>ema50,e50100:ema50>ema100,e100200:ema100>ema200,
+    stack:ema9>ema20>ema50>ema100>ema200,
+    cross920:e9p<=e20p&&ema9>ema20,cross2050:e20p<=e50p&&ema20>ema50,cross50100:e50p<=e100p&&ema50>ema100,cross100200:e100p<=e200p&&ema100>ema200,
+    candlevol:bullish&&vol>v20,tight:range<=.8*atr&&c>ema20,wick:hammer,
+    reversal:(engulf||piercing||hammer||morning||tweezer)&&c>ema20,
+    momentum:rsi>60&&st>80,trendbreak:c>ema20&&ema20>ema50&&h>ph&&vol>v20,
+    pivot,r1,r2,r3,s1,s2,s3
+  };
+}
+
+
+function openRawDataPage(row,name){
+  const win=window.open('','_blank');
+  if(!win){alert('Please allow pop-ups to open the raw data page.');return;}
+
+  const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  const findKey=(wanted)=>{
+    const key=Object.keys(row).find(k=>k.trim().toLowerCase()===wanted.trim().toLowerCase());
+    return key;
+  };
+
+  const dateKey=findKey('Date')||findKey('date');
+  const symbolKey=findKey('Symbol')||findKey('Stock')||findKey('Stock Name');
+  const closeKey=findKey('Close')||findKey('Today close')||findKey('today close');
+
+  const topRows=[
+    ['📅 Date',dateKey===undefined?'—':row[dateKey]],
+    ['📌 Symbol',symbolKey===undefined?name:row[symbolKey]],
+    ['💰 Close',closeKey===undefined?'—':row[closeKey]]
+  ];
+
+  const metricFields=[
+    ['📈 RSI','Rsi'],['📊 MACD','Macd'],['🧭 ADX','Adx'],
+    ['🐂 Bullish Trend Strength','Bullish trend strength'],['🎯 VWAP','Vwap'],
+    ['⚡ CCI','Cci'],['🔄 Stochastic','Stochastic'],
+    ['🕯️ Candle Body Strength','Candle body strength'],
+    ['🔥 ATR 5 > 8','100 %bull - atr 5 > 8'],
+    ['📈 ATR Rising','100 %bull - atr rising'],
+    ['🟢 AlphaTrend Buy Marker','Alphatrend - buy marker'],
+    ['📐 AlphaTrend Line','Alphatrend line'],
+    ['🌊 Average True Range','Avg_true_range'],['🛡️ Stop Loss','Stop loss']
+  ];
+
+  const used=new Set(
+    topRows.map(x=>findKey(x[0])).filter(Boolean)
+      .concat(metricFields.map(x=>findKey(x[1])).filter(Boolean))
+  );
+  if(closeKey) used.add(closeKey);
+
+  const topHtml=topRows.map(([label,v],i)=>
+    `<div class="hero-card c${i}"><span>${esc(label)}</span><strong>${esc(v)}</strong></div>`
+  ).join('');
+
+  const metricHtml=metricFields.map(([label,keyName],i)=>{
+    const k=findKey(keyName);
+    return `<tr><td><strong>${esc(label)}</strong></td><td>${esc(k===undefined?'—':row[k])}</td></tr>`;
+  }).join('');
+
+  const otherHtml=Object.keys(row).filter(k=>!used.has(k)).map(k=>
+    `<tr><td><strong>${esc(k)}</strong></td><td>${esc(row[k])}</td></tr>`
+  ).join('');
+
+  win.document.open();
+  win.document.write(`<!doctype html>
+<html><head><meta charset="utf-8">
+<title>STWP Raw Data - ${esc(name)}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,#f6fbff,#fff7fc 55%,#f4fff9);
+font-family:Arial,Helvetica,sans-serif;color:#263432}
+header{background:linear-gradient(120deg,#123f35,#155a82,#7b3fb5);color:#fff;
+padding:20px 18px;box-shadow:0 4px 18px #0002}
+h1{margin:0;font-size:22px}
+p{margin:6px 0 0;font-size:13px;opacity:.9}
+.wrap{max-width:950px;margin:auto;padding:18px}
+.hero{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.hero-card{padding:16px;border-radius:12px;background:#fff;box-shadow:0 4px 16px #00000012;border:1px solid #e3e9ee}
+.hero-card span{display:block;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.hero-card strong{font-size:22px}
+.c0 span{color:#155a82}.c1 span{color:#7b3fb5}.c2 span{color:#a05b00}
+.section-title{margin:18px 0 8px;font-size:14px;color:#155a82}
+.card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px #00000010}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:10px 12px;border-bottom:1px solid #e8ecef;text-align:left}
+th{background:#eef5fa;color:#155a82}
+tr:nth-child(even) td{background:#fafcfd}
+td:first-child{width:45%;color:#365d70}
+td:nth-child(2){word-break:break-word;color:#222}
+.other{margin-top:18px}
+@media(max-width:650px){.hero{grid-template-columns:1fr}.wrap{padding:12px}h1{font-size:19px}}
+</style></head><body>
+<header><h1>📋 STWP Raw Data · ${esc(name)}</h1><p>🔍 Complete raw CSV values for this stock</p></header>
+<div class="wrap">
+<div class="hero">${topHtml}</div>
+<div class="section-title">📊 Key Market Data</div>
+<div class="card"><table><thead><tr><th>FIELD</th><th>VALUE</th></tr></thead>
+<tbody>${metricHtml}</tbody></table></div>
+${otherHtml ? `<div class="section-title other">🗃️ Other Raw CSV Data</div><div class="card"><table><tbody>${otherHtml}</tbody></table></div>` : ''}
+</div></body></html>`);
+  win.document.close();
+}
+
+function stwpScore(r){
+  const x=calculate(r);
+  let total=0;
+
+  // 1. Price Action / 5
+  if(Number.isFinite(x.c)&&Number.isFinite(x.o)&&x.c>x.o)
+    total += (Number.isFinite(x.cbs)&&x.cbs>60) ? 5 : 3;
+
+  // 2. Tight Range + Directional Bias / 5
+  const hs=[num(r,'Today high'),num(r,'1d ago high'),num(r,'2d ago high'),num(r,'3d ago high'),num(r,'4d ago high')];
+  const ls=[num(r,'Today low'),num(r,'1d ago low'),num(r,'2d ago low'),num(r,'3d ago low'),num(r,'4d ago low')];
+  if(hs.every(Number.isFinite)&&ls.every(Number.isFinite)&&Number.isFinite(x.c)){
+    const fiveHigh=Math.max(...hs), fiveLow=Math.min(...ls);
+    const fiveRange=fiveHigh-fiveLow;
+    const sum=hs.map((h,i)=>h-ls[i]).reduce((a,b)=>a+b,0);
+    if(fiveRange>0&&sum>0&&fiveRange/sum<=0.60){
+      const position=(x.c-fiveLow)/fiveRange;
+      total += position>=0.60 ? 5 : position<=0.40 ? 1 : 3;
+    }
+  }
+
+  // 3. Wick Absorption / 5
+  if(x.bullish && x.lower>=2*x.body && x.body>0) total+=5;
+  else if(x.c<x.o && x.upper>=2*x.body && x.body>0) total+=2;
+
+  // 4. Wick Rejection / 5
+  if(x.range>0&&x.body>0){
+    const cp=(x.c-x.l)/x.range;
+    if(x.lower>=1.5*x.body&&cp>=0.70) total+=5;
+    else if(x.upper>=1.5*x.body&&cp<=0.30) total+=2;
+  }
+
+  // 5. Reversal / Continuation / 10
+  const po=num(r,'1d ago open'), pc=num(r,'1d ago close'), p2o=num(r,'2d ago open'), p2c=num(r,'2d ago close');
+  const pl=num(r,'1d ago low'), p2l=num(r,'2d ago low'), ph=num(r,'1d ago high');
+  const patterns=x.engulf||x.hammer||x.piercing||x.morning||x.tweezer;
+  const priorWeakness=(Number.isFinite(pc)&&Number.isFinite(po)&&pc<po) ||
+                      (Number.isFinite(p2c)&&Number.isFinite(p2o)&&p2c<p2o) ||
+                      (Number.isFinite(pl)&&Number.isFinite(p2l)&&pl<p2l);
+  const strongRecovery=x.range>0&&x.bullish&&(x.c-x.l)/x.range>=0.65;
+  const reversal=patterns&&priorWeakness&&strongRecovery;
+  const continuation=!reversal&&x.bullish&&((x.h>ph&&x.l>pl)||(x.h>ph));
+  if(reversal) total+=8;
+  else if(continuation) total+=10;
+
+  // 6. Market Structure / 10
+  const break5=hs.slice(1).every(Number.isFinite)&&x.h>Math.max(...hs.slice(1));
+  const hh=x.h>ph, hl=x.l>pl;
+  if(hh&&hl&&break5) total+=10;
+  else if(hh&&hl) total+=8;
+  else if(hh&&break5) total+=8;
+  else if(hl&&break5) total+=7;
+  else if(break5) total+=6;
+  else if(hh) total+=5;
+  else if(hl) total+=4;
+
+  // 7. Trend / Moving Averages / 10
+  const e9=num(r,'EMA 9'),e20=num(r,'EMA 20'),e50=num(r,'EMA 50'),e100=num(r,'EMA 100'),e200=num(r,'EMA 200');
+  const p9=num(r,'1d ago EMA 9'),p20=num(r,'1d ago EMA 20'),p50=num(r,'1d ago EMA 50'),p100=num(r,'1d ago EMA 100'),p200=num(r,'1d ago EMA 200');
+  const full=e9>e20&&e20>e50&&e50>e100&&e100>e200;
+  const closeStack=x.c>e9&&e9>e20&&e20>e50;
+  const short=e9>e20&&e20>e50;
+  const medium=e20>e50&&e50>e100&&e100>e200;
+  const close20=x.c>e20&&e9>e20;
+  const c920=Number.isFinite(p9)&&Number.isFinite(p20)&&e9>e20&&p9<=p20;
+  const c2050=Number.isFinite(p20)&&Number.isFinite(p50)&&e20>e50&&p20<=p50;
+  const c50100=Number.isFinite(p50)&&Number.isFinite(p100)&&e50>e100&&p50<=p100;
+  const c100200=Number.isFinite(p100)&&Number.isFinite(p200)&&e100>e200&&p100<=p200;
+  if(full) total+=10;
+  else if(closeStack) total+=9;
+  else if(short) total+=7;
+  else if(medium) total+=7;
+  else if(close20) total+=6;
+  else if(c920||c2050) total+=5;
+  else if(c50100) total+=4;
+  else if(c100200) total+=3;
+
+  // 8. Momentum / 10 — strongest combination gets priority.
+  const rs=x.rsi>60, st=x.st>80, mac=x.macd>0, cc=x.cci>100, ad=x.adx>25;
+  const strongMom=rs&&st&&mac;
+  if(rs&&st&&mac&&cc) total+=10;
+  else if(strongMom&&ad) total+=9;
+  else if(rs&&st&&mac) total+=8;
+  else if(rs&&st&&cc) total+=8;
+  else if(rs&&mac&&cc) total+=8;
+  else if((rs||st||mac||cc)&&ad) total+=7;
+  else if(rs&&st) total+=6;
+  else if(rs&&mac) total+=6;
+  else if(st&&mac) total+=6;
+  else if(Number.isFinite(num(r,'Bullish Trend Strength'))&&num(r,'Bullish Trend Strength')>0) total+=4;
+
+  // 9. Volume / 5
+  const vol=x.vol, v20=x.v20, ratio=vol/v20;
+  if(Number.isFinite(ratio)){
+    if(ratio>2) total+=5;
+    else if(ratio>1.5) total+=4;
+    else if(ratio>=1) total+=3;
+    else if(ratio>=0.75) total+=1;
+  }
+
+  // 10. Pivot / Support / 5
+  if(Number.isFinite(x.c)&&Number.isFinite(x.r3)&&x.c>x.r3) total+=5;
+  else if(x.c>x.r1&&x.c<=x.r3) total+=5;
+  else if(x.c>x.pivot&&x.c<=x.r1) total+=4;
+  else if(x.c>x.s1&&x.c<=x.pivot) total+=2;
+  else if(x.c>x.s2&&x.c<=x.s1) total+=1;
+
+  // 11. VWAP / AlphaTrend / 10
+  const aboveVWAP=x.c>x.vwap, alphaBuy=x.alpha>0, aboveAlpha=x.c>x.alphaLine;
+  if(aboveVWAP&&alphaBuy&&aboveAlpha) total+=10;
+  else if(aboveVWAP&&alphaBuy) total+=8;
+  else if(aboveVWAP&&aboveAlpha) total+=8;
+  else if(alphaBuy&&aboveAlpha) total+=7;
+  else if(aboveVWAP||alphaBuy) total+=5;
+  else if(aboveAlpha) total+=4;
+
+  // 12. Candle + Volume / 10
+  const strength=x.cbs;
+  if(x.bullish&&Number.isFinite(ratio)){
+    const strong=Number.isFinite(strength)&&strength>70;
+    if(strong&&ratio>2) total+=10;
+    else if(strong&&ratio>1.5) total+=9;
+    else if(strong&&ratio>=1) total+=8;
+    else if(ratio>2) total+=8;
+    else if(ratio>1.5) total+=7;
+    else if(ratio>=1) total+=6;
+    else if(ratio>=0.75) total+=4;
+  }
+
+  // 13. Trend + Breakout + Volume / 10
+  const strongTrend=full;
+  const bullTrend=short;
+  const volAbove=ratio>=1&&ratio<=1.5;
+  const volSpike=ratio>1.5;
+  const heavy=ratio>2;
+  const oneDay=Number.isFinite(x.h)&&Number.isFinite(ph)&&x.h>ph;
+  const twoDay=oneDay&&Number.isFinite(num(r,'2d ago high'))&&x.h>num(r,'2d ago high');
+  const threeDay=twoDay&&Number.isFinite(num(r,'3d ago high'))&&x.h>num(r,'3d ago high');
+  const fourDay=threeDay&&Number.isFinite(num(r,'4d ago high'))&&x.h>num(r,'4d ago high');
+  if(strongTrend&&break5&&heavy) total+=10;
+  else if(strongTrend&&break5&&volSpike) total+=9;
+  else if(bullTrend&&break5&&volAbove) total+=8;
+  else if(strongTrend&&oneDay&&volSpike) total+=8;
+  else if(bullTrend&&oneDay&&volAbove) total+=7;
+  else if(bullTrend&&twoDay&&volSpike) total+=7;
+  else if(bullTrend&&(threeDay||fourDay)&&volSpike) total+=6;
+  else if(bullTrend&&oneDay&&ratio>=0.75) total+=4;
+
+  return Math.max(0,Math.min(100,Math.round(total)));
+}
+
+function render(){
+  const q=norm(search.value);
+  const list=rawData
+    .filter(r=>!q||norm(stock(r)).includes(q))
+    .sort((a,b)=>stwpScore(b)-stwpScore(a));
+  tbody.innerHTML='';
+  if(!list.length){table.style.display='none';empty.style.display='block';count.textContent='';return}
+  empty.style.display='none';table.style.display='table';count.textContent=`${list.length} of ${rawData.length} stocks`;
+
+  const scoreRow=document.createElement('tr');scoreRow.className='score-row';
+  const scoreLabel=document.createElement('th');scoreLabel.textContent='⭐ STWP BULLISH SCORE';scoreRow.appendChild(scoreLabel);
+  list.forEach(r=>{
+    const th=document.createElement('th');
+    const s=stwpScore(r);
+    th.innerHTML=`<span class="score-value">${s}/100</span>`;
+    scoreRow.appendChild(th);
+  });
+  tbody.appendChild(scoreRow);
+
+  const stockRow=document.createElement('tr');stockRow.className='stock-row';
+  const sl=document.createElement('th');sl.textContent='STOCK';stockRow.appendChild(sl);
+  list.forEach((r,i)=>{
+    const th=document.createElement('th');
+    const name=stock(r)||'—';
+    const link=document.createElement('a');
+    link.href='#';
+    link.className='stock-link';
+    link.textContent=name;
+    link.title='Click to view all raw CSV data for '+name;
+    link.addEventListener('click',e=>{
+      e.preventDefault();
+      openRawDataPage(r,name);
+    });
+    th.appendChild(link);
+    stockRow.appendChild(th);
+  });
+  tbody.appendChild(stockRow);
+
+  const rows=[];
+  rows.push(['CLOSE',r=>`<span class="close">${fmt(calculate(r).c)}</span>`]);
+  rows.push(['🎯 ENTRY PRICE',r=>{
+    const highs=[
+      num(r,'Today high'),
+      num(r,'1d ago high'),
+      num(r,'2d ago high'),
+      num(r,'3d ago high'),
+      num(r,'4d ago high')
+    ];
+    const stop=num(r,'Stop loss');
+    if(!highs.every(Number.isFinite)||!Number.isFinite(stop)) return dash();
+
+    const entry=Math.max(...highs);
+
+    // Entry must be strictly above the CSV Stop Loss.
+    if(entry<=stop) return dash();
+
+    // Display exactly like Close and Stop Loss, with a separate entry color.
+    return `<span class="entry">${fmt(entry,2)}</span>`;
+  }]);
+
+  rows.push(['STOP LOSS',r=>`<span class="sl">${fmt(parseFloat(String(calculate(r).sl).replace(/,/g,'')))}</span>`]);
+
+
+
+  rows.push(['🕯️ CANDLESTICK PATTERNS',r=>{
+    const x=calculate(r);
+    const patterns=[];
+    if(x.engulf) patterns.push('🟢 Bullish Engulfing');
+    if(x.hammer) patterns.push('🔨 Hammer');
+    if(x.morning) patterns.push('🌅 Morning Star');
+    if(x.piercing) patterns.push('🟢 Piercing Pattern');
+    if(x.tweezer) patterns.push('⚖️ Bullish Tweezer Bottom');
+
+    // Bullish Marubozu: very strong bullish body with only small total wick.
+    if(x.bullish && x.range>0 && x.body/x.range>=0.90)
+      patterns.push('🟢 Bullish Marubozu');
+
+    return patterns.length ? yes(patterns.join(' · '),
+      'All bullish candlestick patterns detected from the available OHLC data are displayed together.') : dash();
+  }]);
+
+  rows.push(['🏔️ DONCHIAN 20D / 55D',r=>{
+    const h=num(r,'Today high'),c=num(r,'Today close');
+    const d20=num(r,'20d turtle'),d55=num(r,'55d turtle');
+    if(!Number.isFinite(h)||!Number.isFinite(c)||(!Number.isFinite(d20)&&!Number.isFinite(d55))) return dash();
+
+    const out=[];
+    if(Number.isFinite(d20)){
+      if(c>d20) out.push('🚀 20D Breakout');
+      else if(h>=d20) out.push('⚡ 20D High Test');
+      else out.push(`📊 20D High ${fmt(d20,2)}`);
+    }
+    if(Number.isFinite(d55)){
+      if(c>d55) out.push('🏆 55D Breakout');
+      else if(h>=d55) out.push('⚡ 55D High Test');
+      else out.push(`📊 55D High ${fmt(d55,2)}`);
+    }
+    return yes(out.join(' · '),
+      '20D and 55D Donchian/Turtle levels are taken directly from the CSV.');
+  }]);
+
+  rows.push(['⚡ SHORT-TERM BREAKOUT',r=>{
+    const h=num(r,'Today high'),c=num(r,'Today close');
+    const prev=[num(r,'1d ago high'),num(r,'2d ago high'),num(r,'3d ago high'),num(r,'4d ago high')];
+    if(!Number.isFinite(h)||!Number.isFinite(c)||!prev.every(Number.isFinite)) return dash();
+    const ref=Math.max(...prev);
+    if(c>ref) return yes('🚀 Short-Term Breakout','Today close is above the highest high of the previous 4 trading days.');
+    if(h>ref) return yes('⚡ Breakout Attempt','Today high exceeded the previous 4-day high, but the close did not confirm.');
+    return dash();
+  }]);
+
+  rows.push(['🔥 NEXT-DAY INTRADAY SETUP',r=>{
+    const x=calculate(r);
+    const ratio=x.vol/x.v20;
+    const ema20=num(r,'EMA 20');
+    const conditions=[
+      x.bullish,
+      Number.isFinite(x.cbs)&&x.cbs>60,
+      Number.isFinite(ratio)&&ratio>=1,
+      Number.isFinite(ema20)&&x.c>ema20,
+      Number.isFinite(x.rsi)&&x.rsi>50,
+      Number.isFinite(x.vwap)&&x.c>x.vwap
+    ];
+    const n=conditions.filter(Boolean).length;
+
+    if(n>=5) return yes('🔥 Favorable','Strong next-day intraday screening conditions are aligned. This is a setup classification, not a prediction.');
+    if(n>=3) return yes('🟡 Watchlist','Some next-day intraday conditions are aligned. This is a screening classification, not a prediction.');
+    return yes('⚪ Neutral','The available next-day intraday conditions are not sufficiently aligned.');
+  }]);
+
+  rows.push(['📊 CANDLE + VOLUME',r=>{
+    const x=calculate(r);
+    const a=[];
+    const strength=Number(x.cbs);
+    const ratio=Number(x.vol)/Number(x.v20);
+
+    if(x.bullish && Number.isFinite(strength)){
+      if(strength>70)
+        a.push(yes(`🔥 Strong Bullish Candle ${fmt(strength,0)}`,
+          `Today’s candle closed higher and the CSV Candle Body Strength is ${fmt(strength,0)}.`));
+      else
+        a.push(yes(`🕯️ Bullish Candle ${fmt(strength,0)}`,
+          `Today’s candle closed higher. Candle Body Strength from the CSV is ${fmt(strength,0)}.`));
+    }
+
+    if(Number.isFinite(ratio)){
+      if(ratio<0.75)
+        a.push(yes(`🔻 Low Volume ${fmt(ratio,2)}×`,
+          `Today’s volume is ${fmt(ratio,2)} times the 20-day average volume.`));
+      else if(ratio<1.00)
+        a.push(yes(`📊 Normal Volume ${fmt(ratio,2)}×`,
+          `Today’s volume is ${fmt(ratio,2)} times the 20-day average volume.`));
+      else if(ratio<=1.50)
+        a.push(yes(`📈 Above Avg Volume ${fmt(ratio,2)}×`,
+          `Today’s volume is ${fmt(ratio,2)} times the 20-day average volume.`));
+      else
+        a.push(yes(`💥 Volume Spike ${fmt(ratio,2)}×`,
+          `Today’s volume is ${fmt(ratio,2)} times the 20-day average volume.`));
+    }
+
+    return a.join(' · ')||dash();
+  }]);
+
+
+  rows.push(['🟢 TIGHT RANGE + DIRECTIONAL BIAS',r=>{
+    const x=calculate(r);
+
+    const h1=num(r,'Today high'), l1=num(r,'Today low');
+    const h2=num(r,'1d ago high'), l2=num(r,'1d ago low');
+    const h3=num(r,'2d ago high'), l3=num(r,'2d ago low');
+    const h4=num(r,'3d ago high'), l4=num(r,'3d ago low');
+    const h5=num(r,'4d ago high'), l5=num(r,'4d ago low');
+    const close=num(r,'Today close');
+
+    const highs=[h1,h2,h3,h4,h5].filter(Number.isFinite);
+    const lows=[l1,l2,l3,l4,l5].filter(Number.isFinite);
+    if(highs.length<5 || lows.length<5 || !Number.isFinite(close)) return dash();
+
+    // 5-day range
+    const fiveHigh=Math.max(...highs);
+    const fiveLow=Math.min(...lows);
+    const fiveRange=fiveHigh-fiveLow;
+
+    // Classify compression using the five individual daily ranges.
+    const dailyRanges=[
+      h1-l1,h2-l2,h3-l3,h4-l4,h5-l5
+    ];
+    const sumDailyRanges=dailyRanges.reduce((a,b)=>a+b,0);
+
+    // Tight = the combined 5-day range is materially smaller than
+    // the sum of the five daily ranges, indicating price compression.
+    const compressionRatio=fiveRange/sumDailyRanges;
+    if(!Number.isFinite(compressionRatio) || compressionRatio>0.60) return dash();
+
+    // Direction is based on where today's close sits inside the 5-day range.
+    const position=(close-fiveLow)/fiveRange;
+    let bias='Neutral';
+    if(position>=0.60) bias='Bullish';
+    else if(position<=0.40) bias='Bearish';
+
+    return yes(`🟢 Tight · ${bias}`,
+      `The 5-day High-Low range is compressed, and today’s close is ${bias==='Bullish'?'in the upper':bias==='Bearish'?'in the lower':'near the middle of'} the 5-day range.`);
+  }]);
+
+
+  rows.push(['🧲 WICK ABSORPTION',r=>{
+    const x=calculate(r);
+    const a=[];
+    const range=Number(x.range), body=Number(x.body), lower=Number(x.lower), upper=Number(x.upper);
+    if(!Number.isFinite(range)||range<=0||!Number.isFinite(body)||body<=0) return dash();
+
+    if(lower>=2*body && x.c>x.o){
+      a.push(yes('🧲 Lower Wick Absorption',
+        `Lower wick is ${fmt(lower,2)}, at least 2× the candle body ${fmt(body,2)}. The candle closed bullish, indicating buying absorbed lower prices.`));
+    }
+    if(upper>=2*body && x.c<x.o){
+      a.push(yes('🧲 Upper Wick Absorption',
+        `Upper wick is ${fmt(upper,2)}, at least 2× the candle body ${fmt(body,2)}. The candle closed bearish, indicating selling absorbed higher prices.`));
+    }
+    return a.join(' · ')||dash();
+  }]);
+
+  rows.push(['🧲 WICK REJECTION',r=>{
+    const x=calculate(r);
+    const a=[];
+    const range=Number(x.range), body=Number(x.body), lower=Number(x.lower), upper=Number(x.upper);
+    if(!Number.isFinite(range)||range<=0||!Number.isFinite(body)||body<=0) return dash();
+
+    const closePos=(x.c-x.l)/range;
+    if(lower>=1.5*body && closePos>=0.70){
+      a.push(yes('🧲 Lower Wick Rejection',
+        `Price tested the lower part of today’s range, but the lower wick is ${fmt(lower,2)} and the close finished in the upper ${fmt(closePos*100,0)}% of the range, showing rejection of lower prices.`));
+    }
+    if(upper>=1.5*body && closePos<=0.30){
+      a.push(yes('🧲 Upper Wick Rejection',
+        `Price tested the upper part of today’s range, but the upper wick is ${fmt(upper,2)} and the close finished in the lower ${fmt((1-closePos)*100,0)}% of the range, showing rejection of higher prices.`));
+    }
+    return a.join(' · ')||dash();
+  }]);
+
+
+  rows.push(['🚀 REVERSAL / CONTINUATION',r=>{
+    const x=calculate(r);
+    const o=num(r,'Today open'), h=num(r,'Today high'), l=num(r,'Today low'), c=num(r,'Today close');
+    const po=num(r,'1d ago open'), ph=num(r,'1d ago high'), pl=num(r,'1d ago low'), pc=num(r,'1d ago close');
+    const p2o=num(r,'2d ago open'), p2h=num(r,'2d ago high'), p2l=num(r,'2d ago low'), p2c=num(r,'2d ago close');
+
+    // Price-action only — no EMA, RSI, MACD or volume.
+    const patterns=[];
+    if(x.engulf) patterns.push('🔥 Bullish Engulfing');
+    if(x.hammer) patterns.push('🔨 Hammer');
+    if(x.piercing) patterns.push('🟢 Piercing Pattern');
+    if(x.morning) patterns.push('🌅 Morning Star');
+    if(x.tweezer) patterns.push('⚖️ Tweezer Bottom');
+
+    const priorWeakness =
+      (Number.isFinite(pc)&&Number.isFinite(po)&&pc<po) ||
+      (Number.isFinite(p2c)&&Number.isFinite(p2o)&&p2c<p2o) ||
+      (Number.isFinite(pl)&&Number.isFinite(p2l)&&pl<p2l);
+
+    const range=h-l;
+    const strongRecovery =
+      Number.isFinite(o)&&Number.isFinite(h)&&Number.isFinite(l)&&Number.isFinite(c) &&
+      c>o && range>0 && (c-l)/range>=0.65;
+
+    const reversal = patterns.length>0 && priorWeakness && strongRecovery;
+
+    const higherHigh=Number.isFinite(h)&&Number.isFinite(ph)&&h>ph;
+    const higherLow=Number.isFinite(l)&&Number.isFinite(pl)&&l>pl;
+    const continuation=!reversal && c>o && ((higherHigh&&higherLow)||higherHigh);
+
+    if(reversal)
+      return yes(`🔄 Bullish Reversal · ${patterns.join(' · ')}`,
+        `Bullish reversal based on price action. Pattern: ${patterns.join(', ')}. Recent price action showed weakness followed by a strong bullish recovery.`);
+
+    if(continuation)
+      return yes(`🚀 Bullish Continuation · ${patterns.length?patterns.join(' · '):'📈 Higher High / Break'}`,
+        `Bullish continuation based on price action. The stock is showing bullish structure with a higher high and/or higher low, supported by today’s bullish candle.`);
+
+    return dash();
+  }]);
+
+
+  rows.push(['💥 MOMENTUM + VOLUME',r=>{
+    const x=calculate(r);
+    const rsi=Number(x.rsi), st=Number(x.st), macd=Number(x.macd);
+    const vol=Number(x.vol), v20=Number(x.v20);
+    if(!Number.isFinite(vol)||!Number.isFinite(v20)||v20<=0) return dash();
+
+    const ratio=vol/v20;
+    const strongMomentum=Number.isFinite(rsi)&&rsi>60&&Number.isFinite(st)&&st>80;
+    const momentum=Number.isFinite(rsi)&&rsi>50;
+    const volumeSpike=ratio>1.5;
+    const aboveAvg=ratio>=1 && ratio<=1.5;
+    const heavyVolume=ratio>2;
+    const normalVolume=ratio>=0.75 && ratio<1;
+
+    // Locked six-state display:
+    // 1 Strong Momentum + Volume Spike
+    // 2 Strong Momentum + Above Avg Volume
+    // 3 Momentum + Volume Spike
+    // 4 Momentum + Above Avg Volume
+    // 5 Strong Momentum + Heavy Volume
+    // 6 Momentum + Normal Volume
+    if(strongMomentum && heavyVolume)
+      return yes('🚀 Strong Momentum · 🚀 Heavy Volume',
+        `Strong momentum: RSI ${fmt(rsi,1)} and Stochastic ${fmt(st,1)}. Volume is ${fmt(ratio,2)}× the 20-day average.`);
+    if(strongMomentum && volumeSpike)
+      return yes('⚡ Strong Momentum · 💥 Volume Spike',
+        `Strong momentum: RSI ${fmt(rsi,1)} and Stochastic ${fmt(st,1)}. Volume is ${fmt(ratio,2)}× the 20-day average.`);
+    if(strongMomentum && aboveAvg)
+      return yes('⚡ Strong Momentum · 📈 Above Avg Volume',
+        `Strong momentum: RSI ${fmt(rsi,1)} and Stochastic ${fmt(st,1)}. Volume is ${fmt(ratio,2)}× the 20-day average.`);
+    if(momentum && volumeSpike)
+      return yes('⚡ Momentum · 💥 Volume Spike',
+        `Positive momentum: RSI ${fmt(rsi,1)}. Volume is ${fmt(ratio,2)}× the 20-day average.`);
+    if(momentum && aboveAvg)
+      return yes('⚡ Momentum · 📈 Above Avg Volume',
+        `Positive momentum: RSI ${fmt(rsi,1)}. Volume is ${fmt(ratio,2)}× the 20-day average.`);
+    if(momentum && normalVolume)
+      return yes('⚡ Momentum · 📊 Normal Volume',
+        `Positive momentum: RSI ${fmt(rsi,1)}. Volume is ${fmt(ratio,2)}× the 20-day average.`);
+    return dash();
+  }]);
+
+
+  rows.push(['🚀 TREND + BREAKOUT + VOLUME',r=>{
+    const x=calculate(r);
+
+    const c=Number(x.c);
+    const e9=num(r,'EMA 9'), e20=num(r,'EMA 20'), e50=num(r,'EMA 50');
+    const e100=num(r,'EMA 100'), e200=num(r,'EMA 200');
+
+    const h0=num(r,'Today high');
+    const h1=num(r,'1d ago high');
+    const h2=num(r,'2d ago high');
+    const h3=num(r,'3d ago high');
+    const h4=num(r,'4d ago high');
+
+    const vol=Number(x.vol), v20=Number(x.v20);
+    if(!Number.isFinite(vol)||!Number.isFinite(v20)||v20<=0) return dash();
+
+    const ratio=vol/v20;
+
+    // Locked trend definitions.
+    const strongTrend =
+      Number.isFinite(e9)&&Number.isFinite(e20)&&Number.isFinite(e50)&&
+      Number.isFinite(e100)&&Number.isFinite(e200) &&
+      e9>e20 && e20>e50 && e50>e100 && e100>e200;
+
+    const bullishTrend =
+      Number.isFinite(e9)&&Number.isFinite(e20)&&Number.isFinite(e50) &&
+      e9>e20 && e20>e50;
+
+    // Breakout definitions using Today's + previous 4 days' highs.
+    const break1=Number.isFinite(h0)&&Number.isFinite(h1)&&h0>h1;
+    const break2=Number.isFinite(h0)&&Number.isFinite(h1)&&Number.isFinite(h2)&&h0>h1&&h0>h2;
+    const break3=Number.isFinite(h0)&&Number.isFinite(h1)&&Number.isFinite(h2)&&Number.isFinite(h3)&&h0>h1&&h0>h2&&h0>h3;
+    const break4=Number.isFinite(h0)&&Number.isFinite(h1)&&Number.isFinite(h2)&&Number.isFinite(h3)&&Number.isFinite(h4)&&h0>h1&&h0>h2&&h0>h3&&h0>h4;
+
+    const heavy=ratio>2;
+    const spike=ratio>1.5;
+    const aboveAvg=ratio>=1 && ratio<=1.5;
+    const normal=ratio>=0.75 && ratio<1;
+
+    // Strongest state first.
+    if(strongTrend && break4 && heavy)
+      return yes('🚀 Strong Trend · 5D Breakout · 🚀 Heavy Volume',
+        'Full bullish EMA structure, today’s high breaks all four previous daily highs, and volume is above 2× the 20-day average.');
+
+    if(strongTrend && break4 && spike)
+      return yes('🚀 Strong Trend · 5D Breakout · 💥 Volume Spike',
+        'Strong EMA trend, today’s high breaks all four previous daily highs, and volume is above 1.5× the 20-day average.');
+
+    if(bullishTrend && break4 && aboveAvg)
+      return yes('🚀 Bullish Trend · 5D Breakout · 📈 Above Avg Volume',
+        'Bullish EMA trend, today’s high breaks all four previous daily highs, and volume is above the 20-day average.');
+
+    if(strongTrend && break1 && spike)
+      return yes('🚀 Strong Trend · 1D Breakout · 💥 Volume Spike',
+        'Strong EMA trend, today’s high breaks yesterday’s high, with volume above 1.5× the 20-day average.');
+
+    if(bullishTrend && break1 && aboveAvg)
+      return yes('🚀 Bullish Trend · 1D Breakout · 📈 Above Avg Volume',
+        'Bullish EMA trend, today’s high breaks yesterday’s high, with volume above the 20-day average.');
+
+    if(bullishTrend && break2 && spike)
+      return yes('📈 Bullish Trend · 2D Breakout · 💥 Volume Spike',
+        'Bullish EMA trend, today’s high breaks both the 1-day and 2-day highs, with volume above 1.5× the 20-day average.');
+
+    if(bullishTrend && break3 && spike)
+      return yes('📈 Bullish Trend · 3D Breakout · 💥 Volume Spike',
+        'Bullish EMA trend, today’s high breaks the previous 3 daily highs, with volume above 1.5× the 20-day average.');
+
+    if(bullishTrend && break4 && spike)
+      return yes('📈 Bullish Trend · 4D Breakout · 💥 Volume Spike',
+        'Bullish EMA trend, today’s high breaks the previous 4 daily highs, with volume above 1.5× the 20-day average.');
+
+    if(bullishTrend && (break1||break2||break3||break4) && normal)
+      return yes('📈 Bullish Trend · Breakout · 📊 Normal Volume',
+        'Bullish EMA trend and a previous-high breakout are present, but volume remains within the normal range.');
+
+    return dash();
+  }]);
+
+
+  rows.push(['🔎 PRICE ACTION',r=>{
+    const x=calculate(r);
+    if(!Number.isFinite(x.c)||!Number.isFinite(x.o)) return dash();
+    if(x.c>x.o && Number(x.cbs)>60)
+      return yes('🔥 Bullish + Strong Body','Close is above Open and Candle Body Strength is above 60.');
+    if(x.c>x.o)
+      return yes('🟢 Bullish','Close is above Open.');
+    return dash();
+  }]);
+
+  rows.push(['🧭 MARKET STRUCTURE',r=>{
+    const h0=num(r,'Today high'), l0=num(r,'Today low');
+    const h1=num(r,'1d ago high'), l1=num(r,'1d ago low');
+    const h2=num(r,'2d ago high'), l2=num(r,'2d ago low');
+    const h3=num(r,'3d ago high'), l3=num(r,'3d ago low');
+    const h4=num(r,'4d ago high');
+
+    const hh=Number.isFinite(h0)&&Number.isFinite(h1)&&h0>h1;
+    const hl=Number.isFinite(l0)&&Number.isFinite(l1)&&l0>l1;
+    const break5=[h1,h2,h3,h4].every(Number.isFinite) &&
+                 Number.isFinite(h0) && h0>Math.max(h1,h2,h3,h4);
+
+    if(hh&&hl&&break5)
+      return yes('🚀 HH + HL + 5D Break','Today has a Higher High and Higher Low, while today’s high breaks all four previous daily highs.');
+    if(hh&&hl)
+      return yes('🚀 HH + HL','Today has both a Higher High and a Higher Low versus the previous day.');
+    if(hh&&break5)
+      return yes('🚀 HH + 5D Break','Today has a Higher High and breaks the previous 5-day high range.');
+    if(hl&&break5)
+      return yes('📈 HL + 5D Break','Today has a Higher Low and breaks the previous 5-day high range.');
+    if(hh)
+      return yes('📈 HH','Today has a Higher High versus the previous day.');
+    if(hl)
+      return yes('📈 HL','Today has a Higher Low versus the previous day.');
+    if(break5)
+      return yes('🚀 5D Break','Today’s high breaks all four previous daily highs.');
+    return dash();
+  }]);
+
+
+  rows.push(['📈 TREND / MOVING AVERAGES',r=>{
+    const x=calculate(r);
+    const c=Number(x.c);
+    const e9=num(r,'EMA 9'), e20=num(r,'EMA 20'), e50=num(r,'EMA 50');
+    const e100=num(r,'EMA 100'), e200=num(r,'EMA 200');
+
+    const p9=num(r,'1d ago EMA 9'), p20=num(r,'1d ago EMA 20');
+    const p50=num(r,'1d ago EMA 50'), p100=num(r,'1d ago EMA 100');
+    const p200=num(r,'1d ago EMA 200');
+
+    if(![c,e9,e20,e50,e100,e200].every(Number.isFinite)) return dash();
+
+    const fullStack=e9>e20&&e20>e50&&e50>e100&&e100>e200;
+    const close9_20_50=c>e9&&e9>e20&&e20>e50;
+    const shortMedium=e9>e20&&e20>e50;
+    const mediumLong=e20>e50&&e50>e100&&e100>e200;
+    const close20Short=c>e20&&e9>e20;
+
+    // Actual bullish crossovers: today's relationship bullish,
+    // yesterday's relationship was not bullish.
+    const cross920=Number.isFinite(p9)&&Number.isFinite(p20)&&e9>e20&&p9<=p20;
+    const cross2050=Number.isFinite(p20)&&Number.isFinite(p50)&&e20>e50&&p20<=p50;
+    const cross50100=Number.isFinite(p50)&&Number.isFinite(p100)&&e50>e100&&p50<=p100;
+    const cross100200=Number.isFinite(p100)&&Number.isFinite(p200)&&e100>e200&&p100<=p200;
+
+    // One highest-priority state is displayed.
+    if(fullStack)
+      return yes('🏆 Full Bullish EMA Stack',
+        'EMA9 > EMA20 > EMA50 > EMA100 > EMA200 — the complete bullish EMA hierarchy is in place.');
+
+    if(close9_20_50)
+      return yes('🚀 Close > EMA9 > EMA20 > EMA50',
+        'Close is above EMA9, which is above EMA20, which is above EMA50.');
+
+    if(shortMedium)
+      return yes('📈 EMA9 > EMA20 > EMA50',
+        'Short- and medium-term EMAs are arranged bullishly: EMA9 > EMA20 > EMA50.');
+
+    if(mediumLong)
+      return yes('📈 EMA20 > EMA50 > EMA100 > EMA200',
+        'Medium- and long-term EMAs are arranged bullishly: EMA20 > EMA50 > EMA100 > EMA200.');
+
+    if(close20Short)
+      return yes('📈 Close > EMA20 + EMA9 > EMA20',
+        'Price is above EMA20 and the short-term EMA9 is also above EMA20.');
+
+    if(cross920)
+      return yes('🔄 EMA9/20 Bullish Crossover',
+        'EMA9 has crossed above EMA20 today; yesterday EMA9 was at or below EMA20.');
+
+    if(cross2050)
+      return yes('🔄 EMA20/50 Bullish Crossover',
+        'EMA20 has crossed above EMA50 today; yesterday EMA20 was at or below EMA50.');
+
+    if(cross50100)
+      return yes('🔄 EMA50/100 Bullish Crossover',
+        'EMA50 has crossed above EMA100 today; yesterday EMA50 was at or below EMA100.');
+
+    if(cross100200)
+      return yes('🔄 EMA100/200 Bullish Crossover',
+        'EMA100 has crossed above EMA200 today; yesterday EMA100 was at or below EMA200.');
+
+    return dash();
+  }]);
+
+
+  rows.push(['⚡ MOMENTUM',r=>{
+    const x=calculate(r);
+    const rsi=Number(x.rsi), st=Number(x.st), macd=Number(x.macd);
+    const cci=Number(x.cci), adx=Number(x.adx);
+    const bts=Number(x.bts);
+
+    const rsiStrong=Number.isFinite(rsi)&&rsi>60;
+    const stStrong=Number.isFinite(st)&&st>80;
+    const macdPositive=Number.isFinite(macd)&&macd>0;
+    const cciStrong=Number.isFinite(cci)&&cci>100;
+    const adxStrong=Number.isFinite(adx)&&adx>25;
+
+    // Locked 10-state priority. The first matching state is displayed.
+    if(rsiStrong&&stStrong&&macdPositive&&cciStrong)
+      return yes('🏆 RSI + Stochastic + MACD + CCI',
+        `RSI ${fmt(rsi,1)} > 60, Stochastic ${fmt(st,1)} > 80, MACD ${fmt(macd,2)} > 0 and CCI ${fmt(cci,1)} > 100.`);
+
+    if(rsiStrong&&stStrong&&macdPositive)
+      return yes('🚀 RSI + Stochastic + MACD',
+        `RSI ${fmt(rsi,1)} > 60, Stochastic ${fmt(st,1)} > 80 and MACD ${fmt(macd,2)} > 0.`);
+
+    if(rsiStrong&&stStrong)
+      return yes('🔥 RSI + Stochastic Strong',
+        `RSI ${fmt(rsi,1)} > 60 and Stochastic ${fmt(st,1)} > 80.`);
+
+    if(rsiStrong&&macdPositive)
+      return yes('🔥 RSI + MACD Positive',
+        `RSI ${fmt(rsi,1)} > 60 and MACD ${fmt(macd,2)} > 0.`);
+
+    if(stStrong&&macdPositive)
+      return yes('🔥 Stochastic + MACD Positive',
+        `Stochastic ${fmt(st,1)} > 80 and MACD ${fmt(macd,2)} > 0.`);
+
+    if(rsiStrong&&stStrong&&cciStrong)
+      return yes('🚀 RSI + Stochastic + CCI',
+        `RSI ${fmt(rsi,1)} > 60, Stochastic ${fmt(st,1)} > 80 and CCI ${fmt(cci,1)} > 100.`);
+
+    if(rsiStrong&&macdPositive&&cciStrong)
+      return yes('🚀 RSI + MACD + CCI',
+        `RSI ${fmt(rsi,1)} > 60, MACD ${fmt(macd,2)} > 0 and CCI ${fmt(cci,1)} > 100.`);
+
+    if(adxStrong && (rsiStrong||stStrong||macdPositive||cciStrong))
+      return yes('🧭 Momentum + ADX',
+        `ADX ${fmt(adx,1)} > 25 and at least one bullish momentum condition is active.`);
+
+    if(adxStrong && rsiStrong&&stStrong&&macdPositive)
+      return yes('🏆 Strong Momentum + ADX',
+        `ADX ${fmt(adx,1)} > 25 with strong RSI, Stochastic and MACD momentum.`);
+
+    if(Number.isFinite(bts) && bts>0)
+      return yes('⚡ Bullish Trend Strength',
+        'The CSV Bullish Trend Strength condition is positive.');
+
+    return dash();
+  }]);
+
+
+  rows.push(['📊 VOLUME',r=>{
+    const vol=num(r,'Volume');
+    const periods=[
+      [5,'Volume 5 SMA','Vol x 5d'],
+      [7,'Volume 7 SMA','Vol x 7d'],
+      [10,'Volume 10 SMA','Vol x 10d'],
+      [20,'Volume 20 SMA','Vol x 20d'],
+      [30,'Volume 30 SMA','Vol x 30d']
+    ];
+
+    let selected=null;
+    for(const [period,smaField,multipleField] of periods){
+      const sma=num(r,smaField);
+      if(Number.isFinite(vol)&&Number.isFinite(sma)&&vol>sma){
+        selected={period,sma,multiple:num(r,multipleField)};
+      }
+    }
+
+    if(!selected || !Number.isFinite(selected.multiple)) return dash();
+
+    const ratio=selected.multiple;
+    let label='📈 Above Avg';
+    let emoji='📈';
+
+    if(ratio>2){
+      label='Heavy Vol';
+      emoji='🚀';
+    }else if(ratio>1.5){
+      label='Vol Spike';
+      emoji='💥';
+    }
+
+    return yes(
+      `📈 VOL > ${selected.period} SMA · ${emoji} ${fmt(ratio,2)}× ${label}`,
+      `Today’s volume is above the ${selected.period} SMA and is ${fmt(ratio,2)}× that SMA.`
+    );
+  }]);
+
+
+  rows.push(['🎯 PIVOT / SUPPORT',r=>{
+    const x=calculate(r);
+    const c=Number(x.c);
+    const pivot=Number(x.pivot);
+    const r1=Number(x.r1), r2=Number(x.r2), r3=Number(x.r3);
+    const s1=Number(x.s1), s2=Number(x.s2), s3=Number(x.s3);
+
+    if(![c,pivot,r1,r2,r3,s1,s2,s3].every(Number.isFinite)) return dash();
+
+    if(c>r2 && c<=r3)
+      return yes('🚀 Above R2 · Below R3','Close is above Pivot R2 and below R3.');
+    if(c>r1 && c<=r2)
+      return yes('🚀 Above R1 · Below R2','Close is above R1 and below R2.');
+    if(c>pivot && c<=r1)
+      return yes('🟢 Above Pivot · Below R1','Close is above Pivot and below R1.');
+    if(c<=pivot && c>s1)
+      return yes('🔻 Below Pivot · Above S1','Close is below Pivot and above S1.');
+    if(c<=s1 && c>s2)
+      return yes('🔻 Below S1 · Above S2','Close is below S1 and above S2.');
+    if(c<=s2 && c>s3)
+      return yes('🔻 Below S2 · Above S3','Close is below S2 and above S3.');
+    if(c>r3)
+      return yes('🚀 Above R3','Close is above R3.');
+    if(c<=s3)
+      return yes('🔻 Below S3','Close is below S3.');
+    return dash();
+  }]);
+
+
+
+  rows.push(['🎯 VWAP / ALPHATREND',r=>{
+    const x=calculate(r);
+    const c=Number(x.c), vwap=Number(x.vwap), alpha=Number(x.alpha), alphaLine=Number(x.alphaLine);
+
+    const aboveVWAP=Number.isFinite(c)&&Number.isFinite(vwap)&&c>vwap;
+    const alphaBuy=Number.isFinite(alpha)&&alpha>0;
+    const aboveAlpha=Number.isFinite(c)&&Number.isFinite(alphaLine)&&c>alphaLine;
+
+    // Locked 7-state priority: strongest combination first.
+    if(aboveVWAP&&alphaBuy&&aboveAlpha)
+      return yes('🏆 Above VWAP + AlphaTrend Buy + Above AlphaTrend',
+        'Price is above VWAP, AlphaTrend has a Buy signal, and price is above the AlphaTrend line.');
+
+    if(aboveVWAP&&alphaBuy)
+      return yes('🚀 Above VWAP + AlphaTrend Buy',
+        'Price is above VWAP and AlphaTrend has a Buy signal.');
+
+    if(aboveVWAP&&aboveAlpha)
+      return yes('🚀 Above VWAP + Above AlphaTrend',
+        'Price is above VWAP and above the AlphaTrend line.');
+
+    if(alphaBuy&&aboveAlpha)
+      return yes('🚀 AlphaTrend Buy + Above AlphaTrend',
+        'AlphaTrend has a Buy signal and price is above the AlphaTrend line.');
+
+    if(aboveVWAP)
+      return yes('📈 Above VWAP',
+        'Price is above VWAP.');
+
+    if(alphaBuy)
+      return yes('📈 AlphaTrend Buy',
+        'AlphaTrend has a Buy signal.');
+
+    if(aboveAlpha)
+      return yes('📈 Above AlphaTrend',
+        'Price is above the AlphaTrend line.');
+
+    return dash();
+  }]);
+
+
+  rows.forEach(([label,fn],idx)=>{
+    const tr=document.createElement('tr');
+    const th=document.createElement('th');th.textContent=label;tr.appendChild(th);
+    list.forEach(r=>{const td=document.createElement('td');td.innerHTML=fn(r);tr.appendChild(td)});
+    tbody.appendChild(tr);
+  });
+}
+
+function loadRaw(data){
+  rawData=data;
+  render();
+}
+
+fileInput.addEventListener('change',()=>{
+  selectedFile=fileInput.files[0]||null;
+  processBtn.disabled=!selectedFile;
+  fileName.textContent=selectedFile?selectedFile.name:'';
+  status.textContent=selectedFile?'File ready — click Process':'No file selected';
+  rawData=[];
+  table.style.display='none';empty.style.display='block';empty.innerHTML='Upload your CSV and click <b>Process</b>.';
+});
+
+processBtn.addEventListener('click',()=>{
+  if(!selectedFile)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const text=String(reader.result||'').replace(/^\uFEFF/,'');
+      const lines=text.split(/\r?\n/).filter(x=>x.trim()!=='');
+      const matrix=lines.map(line=>{
+        const out=[];let cur='',q=false;
+        for(let i=0;i<line.length;i++){
+          const ch=line[i];
+          if(ch==='"' && line[i+1]==='"'){cur+='"';i++;}
+          else if(ch==='"')q=!q;
+          else if(ch===','&&!q){out.push(cur);cur='';}
+          else cur+=ch;
+        }
+        out.push(cur);return out;
+      });
+      const hs=matrix[0].map(x=>x.trim());
+      const data=matrix.slice(1).map(a=>{const o={};hs.forEach((h,i)=>o[h]=a[i]??'');return o}).filter(o=>stock(o));
+      loadRaw(data);
+      status.textContent=`✓ Processed ${data.length} stocks`;
+    }catch(e){status.textContent='⚠ Could not process CSV';console.error(e)}
+  };
+  reader.readAsText(selectedFile);
+});
+
+search.addEventListener('input',()=>{if(rawData.length)render()});
+
+// No data is displayed until the user uploads and clicks Process.
+</script>
+</body>
+</html>
