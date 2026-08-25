@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,45 +7,55 @@
 <title>STWP Bullish Screener</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#fff;color:#263432;font-family:Arial,Helvetica,sans-serif}
-.topbar{background:#123f35;color:#fff;padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.brand{font-size:23px;font-weight:800;margin-right:auto}
-.btn{border:0;border-radius:7px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:#17483c}
-.btn.process{background:#f2c94c;color:#263432}
+body{margin:0;background:#f6f8fc;color:#26364a;font-family:Arial,Helvetica,sans-serif}
+.topbar{background:linear-gradient(135deg,#172a46,#1d4965);color:#fff;padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 2px 8px #14253a22}
+.brand{font-size:23px;font-weight:800;margin-right:auto;letter-spacing:.1px}
+.btn{border:0;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:#1b4764;box-shadow:0 1px 3px #0002}
+.btn.process{background:#3f7fb5;color:#fff}
+.btn.reset{background:#dce6ef;color:#29465c}
 .btn:disabled{opacity:.55;cursor:not-allowed}
 .status,.file-name{font-size:13px}
-.search-wrap{padding:12px 18px;border-bottom:1px solid #e5e9e7;display:flex;gap:10px;align-items:center}
-.search{width:300px;max-width:100%;padding:9px 12px;border:1px solid #cfd8d4;border-radius:7px;font-size:13px}
-.table-wrap{overflow:auto;padding:0 12px 20px}
+.search-wrap{padding:12px 18px;border-bottom:1px solid #dce5ee;background:#fff;display:flex;gap:10px;align-items:center}
+.search{width:300px;max-width:100%;padding:9px 12px;border:1px solid #c9d6e2;border-radius:8px;font-size:13px;background:#fbfdff}
+.table-wrap{overflow:auto;padding:0 12px 20px;scroll-behavior:smooth;scrollbar-color:#9bb2c5 #edf2f6;scrollbar-width:auto}
 table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-size:13px}
-th,td{height:36px;padding:7px 9px;border-right:1px solid #e6ebe8;border-bottom:1px solid #e6ebe8;text-align:center;white-space:nowrap;background:#fff}
+th,td{height:36px;padding:7px 9px;border-right:1px solid #dfe7ee;border-bottom:1px solid #dfe7ee;text-align:center;white-space:nowrap;background:#fff}
 th:first-child,td:first-child{position:sticky;left:0;z-index:3;min-width:230px;text-align:left;background:#fff;font-weight:800}
-.stock-row th{background:#f1f6f3}
-.section th{background:#eef7f3;color:#23483d;font-size:13px}
-tbody tr:nth-child(odd) td{background:#fbfdfc}
-tbody tr:nth-child(even) td{background:#f5f9f7}
+.stock-row th{background:#e7f2fb!important;color:#185579}
+.section th{background:#edf6fb;color:#234b66;font-size:13px}
+tbody tr:nth-child(odd) td{background:#fbfdff}
+tbody tr:nth-child(even) td{background:#f3f7fa}
 tbody tr:first-child th,tbody tr:nth-child(2) th{background:#fff}
-
 .chip{display:inline;font-weight:700;font-size:13px;background:transparent;padding:0;border-radius:0}
-.dash{color:#aeb7b3}
-.num{font-weight:700;color:#1e5870}
-.pivot{color:#7a4a9b;font-weight:700}
-.score-row th{background:#f4eaff;font-weight:800;white-space:nowrap}
-.score-row th:not(:first-child){border-bottom:3px solid #8e44ad}
-.score-value{font-weight:900;color:#7b3fb5;font-size:14px}
-.stock-row th{background:#e8f4ff!important;color:#155a82}
-.stock-link{color:#155a82;text-decoration:none;font-weight:900;cursor:pointer}
+.dash{color:#aab6c0}
+.num{font-weight:700;color:#1d668d}
+.pivot{color:#7650a8;font-weight:700}
+.score-row th{background:#f0eaff;font-weight:800;white-space:nowrap}
+.score-row th:not(:first-child){border-bottom:3px solid #7654c8}
+.score-value{font-weight:900;color:#6947b7;font-size:14px}
+.stock-link{color:#185a80;text-decoration:none;font-weight:900;cursor:pointer}
 .stock-link:hover{text-decoration:underline}
 .row-label{font-weight:800}
-
-.stock-link{color:#185a80;text-decoration:underline;font-weight:800;cursor:pointer}
-.close{color:#185a80;font-weight:800}
-.entry{color:#7b3fb5;font-weight:800}
-.sl{color:#a05b00;font-weight:800}
-.empty{padding:70px 20px;text-align:center;color:#7a8581}
+.close{color:#17658b;font-weight:800}
+.entry{color:#7550b8;font-weight:800}
+.sl{color:#b05a3b;font-weight:800}
+.empty{padding:70px 20px;text-align:center;color:#738292}
 @media(max-width:700px){.brand{width:100%}th,td{padding:6px 6px;font-size:13px}th:first-child,td:first-child{min-width:190px}}
-.combined-row th{color:#6b4a00;background:#fff}
+.combined-row th{color:#7a5b16;background:#fff}
 .combined-row td{font-weight:700}
+.scroll-arrow{pointer-events:auto;position:fixed;top:250px;z-index:20;width:42px;height:42px;border:0;border-radius:50%;background:#1d668d;color:#fff;font-size:19px;font-weight:900;box-shadow:0 4px 14px #19334a33;cursor:pointer;opacity:.92;display:flex;align-items:center;justify-content:center}
+.scroll-arrow:hover{background:#174f6e;opacity:1}
+.scroll-arrow.left{left:7px}
+.scroll-arrow.right{right:7px}
+.scroll-arrow:disabled{opacity:.28;cursor:default}
+.download-cell{padding:5px!important}
+.download-btn{border:0;border-radius:8px;padding:7px 10px;background:#e4f4ef;color:#17634d;font-weight:800;font-size:12px;cursor:pointer}
+.download-btn:hover{background:#d5eee6}
+.tip{position:relative;display:inline-block}
+.tip-icon{margin-left:5px;cursor:help;font-size:11px;color:#55718a}
+.tip-box{display:none;position:fixed;z-index:1000;max-width:290px;background:#24364a;color:#fff;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.4;white-space:normal;box-shadow:0 6px 20px #0004;text-align:left}
+.tip:hover .tip-box{display:block}
+@media(max-width:700px){.scroll-arrow{width:38px;height:38px;font-size:17px}.scroll-arrow.left{left:4px}.scroll-arrow.right{right:4px}.tip-box{max-width:240px}}
 </style>
 </head>
 <body>
@@ -53,6 +64,7 @@ tbody tr:first-child th,tbody tr:nth-child(2) th{background:#fff}
   <label class="btn" for="csvFile">📂 Upload CSV</label>
   <input id="csvFile" type="file" accept=".csv,text/csv" hidden>
   <button id="processBtn" class="btn process" disabled>⚡ Process</button>
+  <button id="resetBtn" class="btn reset">🔄 Reset</button>
   <span id="status" class="status">No file selected</span>
   <span id="fileName" class="file-name"></span>
 </div>
@@ -60,7 +72,9 @@ tbody tr:first-child th,tbody tr:nth-child(2) th{background:#fff}
   <input id="search" class="search" type="search" placeholder="🔍 Search stock name or symbol...">
   <span id="count"></span>
 </div>
-<div class="table-wrap">
+<button id="scrollLeft" class="scroll-arrow left" aria-label="Scroll left">◀</button>
+<button id="scrollRight" class="scroll-arrow right" aria-label="Scroll right">▶</button>
+<div class="table-wrap" id="tableWrap">
   <div id="empty" class="empty">Upload your CSV and click <b>Process</b>.</div>
   <table id="matrix" style="display:none"><thead></thead><tbody></tbody></table>
 </div>
@@ -364,6 +378,109 @@ function stwpScore(r){
 
   return Math.max(0,Math.min(100,Math.round(total)));
 }
+
+
+function escapeHtml(v){
+  return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function stripHTML(v){
+  const d=document.createElement('div');d.innerHTML=String(v??'');
+  return (d.textContent||d.innerText||'').replace(/\s+/g,' ').trim();
+}
+function downloadStockDataForStock(stockName){
+  const r=rawData.find(x=>stock(x)===stockName);
+  if(!r) return;
+
+  const x=calculate(r);
+  const highs=[
+    num(r,'Today high'),
+    num(r,'1d ago high'),
+    num(r,'2d ago high'),
+    num(r,'3d ago high'),
+    num(r,'4d ago high')
+  ];
+  const stop=num(r,'Stop loss');
+  const entry=highs.every(Number.isFinite)?Math.max(...highs):NaN;
+
+  const output=[
+    ['⭐ STWP Bullish Score',stwpScore(r)+'/100'],
+    ['STOCK',stockName||'—'],
+    ['CLOSE',Number.isFinite(x.c)?fmt(x.c):'—'],
+    ['🎯 ENTRY PRICE',Number.isFinite(entry)&&Number.isFinite(stop)&&entry>stop?fmt(entry,2):'—'],
+    ['STOP LOSS',Number.isFinite(stop)?fmt(stop):'—']
+  ];
+
+  // Capture exactly the visible main-page analysis for this stock.
+  const tableRows=[...tbody.querySelectorAll('tr')];
+  for(const tr of tableRows){
+    const labelCell=tr.querySelector('th');
+    if(!labelCell) continue;
+
+    const label=stripHTML(labelCell.innerText||labelCell.textContent||'');
+    if(label==='📥 DOWNLOAD'||label==='⭐ STWP BULLISH SCORE'||label==='STOCK'||label==='CLOSE'||label==='🎯 ENTRY PRICE'||label==='STOP LOSS') continue;
+
+    const headers=[...tbody.querySelectorAll('tr.stock-row th')];
+    const col=headers.findIndex(th=>stripHTML(th.innerText||th.textContent||'')===stockName);
+    if(col<1) continue;
+
+    const cells=[...tr.querySelectorAll('td')];
+    const cell=cells[col-1];
+    output.push([label,cell?stripHTML(cell.innerText||cell.textContent||''):'—']);
+  }
+
+  // AI-friendly TXT: one continuous paragraph, with each main-page
+  // category written as a simple statement.
+  const clean=v=>String(v??'—').replace(/\s+/g,' ').trim();
+  const paragraph =
+    `STWP Bullish Screener Data for ${clean(stockName)}: ` +
+    output.map(([label,value])=>{
+      if(label==='STOCK') return `Stock is ${clean(value)}`;
+      if(label==='⭐ STWP Bullish Score') return `the STWP Bullish Score is ${clean(value)}`;
+      if(label==='CLOSE') return `the Close is ${clean(value)}`;
+      if(label==='🎯 ENTRY PRICE') return `the Entry Price is ${clean(value)}`;
+      if(label==='STOP LOSS') return `the Stop Loss is ${clean(value)}`;
+      return `${clean(label)} is ${clean(value)}`;
+    }).join('. ') + '.';
+
+  const txt =
+    `STWP BULLISH SCREENER\n\n` +
+    `${paragraph}\n`;
+
+  const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`STWP_${stockName.replace(/[^a-z0-9_-]+/gi,'_')}_Screener_Data.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),500);
+}
+
+
+const explanations={
+  'CLOSE':'Latest closing price from the processed CSV.',
+  '🎯 ENTRY PRICE':'Highest High across today and the previous four trading days. It is displayed only when it is above Stop Loss.',
+  'STOP LOSS':'Stop-loss level taken from the CSV.',
+  '🕯️ CANDLESTICK PATTERNS':'Detects bullish candlestick patterns from the available OHLC data. Multiple patterns can be shown together.',
+  '🏔️ DONCHIAN 20D / 55D':'Uses the CSV 20D and 55D Turtle/Donchian levels to identify breakouts or tests.',
+  '⚡ SHORT-TERM BREAKOUT':"Checks whether today’s Close confirms a break above the previous four trading-day highs.",
+  '🔥 NEXT-DAY INTRADAY SETUP':'A screening classification using available bullish price action, volume, trend, momentum and VWAP conditions. It is not a prediction.',
+  '📊 CANDLE + VOLUME':'Checks candle direction and strength together with volume participation.',
+  '🟢 TIGHT RANGE + DIRECTIONAL BIAS':'Uses the five-day High/Low range to identify a tight range and its directional bias.',
+  '🧲 WICK ABSORPTION':'Looks for a strong wick indicating price pressure being absorbed.',
+  '🧲 WICK REJECTION':'Looks for a wick showing rejection of a price area.',
+  '🚀 REVERSAL / CONTINUATION':'Uses recent price action to classify a bullish reversal or bullish continuation.',
+  '💥 MOMENTUM + VOLUME':'Combines momentum conditions with volume participation.',
+  '🚀 TREND + BREAKOUT + VOLUME':'Combines bullish EMA trend, breakout and volume participation.',
+  '🔎 PRICE ACTION':'Checks whether today’s candle is bullish and whether its body is strong.',
+  '🧭 MARKET STRUCTURE':'Checks Higher High, Higher Low and 5-day breakout structure.',
+  '📈 TREND / MOVING AVERAGES':'Checks EMA alignment and bullish EMA crossovers.',
+  '⚡ MOMENTUM':'Combines RSI, Stochastic, MACD, CCI, ADX and bullish trend-strength conditions.',
+  '📊 VOLUME':'Shows the highest Volume SMA exceeded and the corresponding volume expansion.',
+  '🎯 PIVOT / SUPPORT':'Shows where the Close sits within Pivot, resistance and support levels.',
+  '🎯 VWAP / ALPHATREND':'Checks price against VWAP and AlphaTrend conditions.',
+  '📥 DOWNLOAD':'Downloads only the complete main-page screener data for this individual stock.'
+};
 
 function render(){
   const q=norm(search.value);
@@ -1044,12 +1161,24 @@ function render(){
   }]);
 
 
+
+  // Final per-stock download row: exports ONLY the complete main-page screener data.
+  rows.push(['📥 DOWNLOAD',r=>{
+    const name=stock(r)||'STOCK';
+    return `<div class="download-cell"><button class="download-btn" data-stock-download="${escapeHtml(name)}">📥 Download</button></div>`;
+  }]);
+
   rows.forEach(([label,fn],idx)=>{
     const tr=document.createElement('tr');
-    const th=document.createElement('th');th.textContent=label;tr.appendChild(th);
+    const th=document.createElement('th');
+    if(explanations[label]){
+      th.innerHTML=`<span class="tip">${escapeHtml(label)}<span class="tip-icon">ⓘ</span><span class="tip-box">${escapeHtml(explanations[label])}</span></span>`;
+    }else th.textContent=label;
+    tr.appendChild(th);
     list.forEach(r=>{const td=document.createElement('td');td.innerHTML=fn(r);tr.appendChild(td)});
     tbody.appendChild(tr);
   });
+  if(typeof refreshHorizontalScroll==='function') requestAnimationFrame(refreshHorizontalScroll);
 }
 
 function loadRaw(data){
@@ -1094,6 +1223,74 @@ processBtn.addEventListener('click',()=>{
 });
 
 search.addEventListener('input',()=>{if(rawData.length)render()});
+
+tbody.addEventListener('click',e=>{
+  const btn=e.target.closest('.download-btn');
+  if(btn) downloadStockDataForStock(btn.dataset.stockDownload);
+});
+
+function setupHorizontalScroll(){
+  const wrap=document.getElementById('tableWrap');
+  const left=document.getElementById('scrollLeft');
+  const right=document.getElementById('scrollRight');
+  if(!wrap||!left||!right)return;
+
+  const place=()=>{
+    const rect=wrap.getBoundingClientRect();
+    const top=Math.max(100,Math.min(window.innerHeight-55,rect.top+Math.min(rect.height,window.innerHeight-120)/2-21));
+    left.style.top=top+'px';
+    right.style.top=top+'px';
+  };
+
+  const update=()=>{
+    const max=Math.max(0,wrap.scrollWidth-wrap.clientWidth);
+    left.disabled=false;
+    right.disabled=false;
+    left.style.opacity=max<=2 || wrap.scrollLeft<=2 ? '.35' : '.92';
+    right.style.opacity=max<=2 || wrap.scrollLeft>=max-2 ? '.35' : '.92';
+    place();
+  };
+
+  // Do not depend on scrollBy; assigning scrollLeft works consistently
+  // across browsers and desktop/mobile WebViews.
+  left.onclick=(ev)=>{
+    ev.preventDefault();
+    ev.stopPropagation();
+    wrap.scrollLeft=Math.max(0,wrap.scrollLeft-Math.max(300,wrap.clientWidth*.75));
+    setTimeout(update,50);
+  };
+
+  right.onclick=(ev)=>{
+    ev.preventDefault();
+    ev.stopPropagation();
+    wrap.scrollLeft=Math.min(wrap.scrollWidth-wrap.clientWidth,
+      wrap.scrollLeft+Math.max(300,wrap.clientWidth*.75));
+    setTimeout(update,50);
+  };
+
+  wrap.addEventListener('scroll',update,{passive:true});
+  window.addEventListener('resize',update);
+  window.addEventListener('scroll',place,{passive:true});
+  requestAnimationFrame(update);
+  return update;
+}
+
+const refreshHorizontalScroll=setupHorizontalScroll();
+
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  selectedFile=null;
+  rawData=INITIAL_RAW.map(r=>({...r}));
+  fileInput.value='';
+  processBtn.disabled=true;
+  fileName.textContent='';
+  status.textContent='Reset — upload a CSV and click Process';
+  search.value='';
+  table.style.display='none';
+  empty.style.display='block';
+  empty.innerHTML='Upload your CSV and click <b>Process</b>.';
+  count.textContent='';
+});
+
 
 // No data is displayed until the user uploads and clicks Process.
 </script>
