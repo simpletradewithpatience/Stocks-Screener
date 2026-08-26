@@ -54,7 +54,12 @@ tbody tr:first-child th,tbody tr:nth-child(2) th{background:#fff}
 .tip{position:relative;display:inline-block}
 .tip-icon{margin-left:5px;cursor:help;font-size:11px;color:#55718a}
 .tip-box{display:none;position:fixed;z-index:1000;max-width:290px;background:#24364a;color:#fff;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.4;white-space:normal;box-shadow:0 6px 20px #0004;text-align:left}
-.tip:hover .tip-box{display:block}
+.tip:hover .tip-box{display:block}.tip-box.show{display:block}
+.signal-tip{position:relative;display:inline-block;cursor:help}
+.signal-tip .signal-tip-box{display:none;position:fixed;z-index:2000;max-width:300px;background:#24364a;color:#fff;padding:9px 11px;border-radius:8px;font-size:12px;line-height:1.4;white-space:normal;box-shadow:0 6px 20px #0004;text-align:left}
+.signal-tip:hover .signal-tip-box{display:block}
+.signal-tip .signal-tip-box.show{display:block}
+
 @media(max-width:700px){.scroll-arrow{width:38px;height:38px;font-size:17px}.scroll-arrow.left{left:4px}.scroll-arrow.right{right:4px}.tip-box{max-width:240px}}
 </style>
 </head>
@@ -380,6 +385,109 @@ function stwpScore(r){
 }
 
 
+function getSignalNarration(label,text){
+  const t=String(text||'').trim();
+  if(!t || t==='—') return '';
+  const has=(...a)=>a.some(x=>t.toLowerCase().includes(x.toLowerCase()));
+
+  if(label==='📊 CANDLE + VOLUME'){
+    if(has('strong')) return 'The stock is showing a strong bullish candle with supportive participation. If buyers remain active, this strength can carry into the next move.';
+    return 'The candle is bullish, but the strength of participation is more moderate. Follow-through will be important before treating the move as strong.';
+  }
+  if(label==='🟢 TIGHT RANGE + DIRECTIONAL BIAS'){
+    if(has('tight · bullish')) return 'Price is compressed in a tight range with a bullish bias. A range breakout can trigger a quicker upward move if buyers step in.';
+    if(has('tight · bearish')) return 'Price is compressed in a tight range but the bias is bearish. A downside break could increase selling pressure.';
+    return 'Price is compressed in a tight range without a clear directional advantage. The next range break may provide the stronger signal.';
+  }
+  if(label==='🧲 WICK ABSORPTION'){
+    if(has('lower')) return 'Selling pressure was absorbed near the lower area of the candle. If buyers continue to defend that zone, price can attempt a recovery.';
+    if(has('upper')) return 'Buying pressure was absorbed near the upper area of the candle. Failure to push higher may lead to consolidation or a pullback.';
+  }
+  if(label==='🧲 WICK REJECTION'){
+    if(has('lower')) return 'Price was rejected from lower levels, showing buyers defended that area. A follow-through move higher can strengthen the signal.';
+    if(has('upper')) return 'Price was rejected from higher levels, showing sellers defended that area. Further rejection can create a pullback.';
+  }
+  if(label==='🚀 REVERSAL / CONTINUATION'){
+    if(has('reversal')) return 'Price action suggests that weakness may be turning into a bullish reversal. Follow-through above the recent reaction high would strengthen the move.';
+    if(has('continuation')) return 'The existing bullish structure is continuing. Holding the recent support and making another higher high can extend the move.';
+  }
+  if(label==='🔎 PRICE ACTION'){
+    if(has('strong body')) return 'The current candle is bullish with a strong body, showing stronger buyer control. Continued follow-through can support the next upward move.';
+    return 'The current candle is bullish, showing buyers closed the session above the open. The next move will depend on follow-through.';
+  }
+  if(label==='🧭 MARKET STRUCTURE'){
+    if(has('hh + hl + 5d break')) return 'Price is forming a Higher High and Higher Low while breaking the recent five-day range. This is a strong bullish structure and can support continuation if the breakout holds.';
+    if(has('hh + hl')) return 'Price is forming both a Higher High and Higher Low, indicating a developing bullish structure. Another breakout can strengthen the trend.';
+    if(has('hh + 5d break')) return 'A Higher High is accompanied by a five-day breakout. Holding above the breakout area can support further upside.';
+    if(has('hl + 5d break')) return 'A Higher Low is present along with a five-day breakout. Buyers are defending structure while attempting to move higher.';
+    if(has('hh')) return 'Price has formed a Higher High, showing improving bullish pressure. A Higher Low would provide stronger structural confirmation.';
+    if(has('hl')) return 'Price has formed a Higher Low, showing buyers are defending at a higher level. A Higher High would strengthen the bullish structure.';
+    if(has('5d break')) return 'Price has broken the recent five-day high. Holding above the breakout level can support continuation.';
+  }
+  if(label==='📈 TREND / MOVING AVERAGES'){
+    if(has('full bullish ema stack')) return 'All major EMAs are aligned bullishly, with shorter averages above longer averages. This supports an established bullish trend, provided price continues to hold above key averages.';
+    if(has('close > ema9 > ema20 > ema50')) return 'Price is above the short and medium-term EMAs with bullish alignment. This supports continued upward pressure if the alignment holds.';
+    if(has('ema9 > ema20 > ema50')) return 'Short and medium-term EMAs are aligned bullishly. This suggests improving trend structure and can support continuation.';
+    if(has('ema20 > ema50 > ema100 > ema200')) return 'The medium and long-term EMAs are aligned bullishly, indicating a broader upward trend.';
+    if(has('ema9/20 bullish crossover')) return 'EMA 9 has crossed above EMA 20, indicating improving short-term trend momentum. Sustained price strength can turn the crossover into a stronger trend move.';
+  }
+  if(label==='⚡ MOMENTUM'){
+    if(has('rsi + stochastic + macd + cci')) return 'Several momentum measures are bullish at the same time. This shows broad buying pressure and can support further upside, although momentum may become stretched.';
+    if(has('strong momentum + adx')) return 'Momentum is strong and ADX indicates a meaningful trend. This combination can support continuation while the trend remains intact.';
+    if(has('bullish trend strength')) return 'The trend-strength measure is indicating bullish pressure. Further price confirmation can strengthen the move.';
+  }
+  if(label==='📊 VOLUME'){
+    if(has('heavy vol')) return 'Volume is expanding strongly relative to its reference average. Heavy participation can fuel a breakout or sharp continuation, but it can also increase volatility.';
+    if(has('vol spike')) return 'Volume is significantly above its reference average, showing increased participation. If price holds the move, the higher activity can support continuation.';
+    if(has('above avg')) return 'Volume is above its reference average, showing improving participation. Stronger expansion can provide additional confirmation.';
+  }
+  if(label==='🎯 PIVOT / SUPPORT'){
+    if(has('above r2')) return 'Price is trading above the second resistance level. Holding this area can open the path toward the next resistance, while rejection can trigger a pullback.';
+    if(has('above r1')) return 'Price has moved above the first resistance level. Holding above it can support a move toward the next resistance.';
+    if(has('above pivot')) return 'Price is above the central pivot, giving the current structure a bullish bias. Holding above the pivot supports the bullish case.';
+    if(has('below s1')) return 'Price has moved below first support, indicating increased downside pressure. Reclaiming the level would be important for recovery.';
+  }
+  if(label==='🎯 VWAP / ALPHATREND'){
+    if(has('above vwap + alphatrend buy + above alphatrend')) return 'Price is above VWAP and AlphaTrend with a buy condition. Multiple bullish references agree, supporting continuation if price holds these levels.';
+    if(has('above vwap')) return 'Price is above VWAP, showing buyers are currently controlling the average traded area. Holding above VWAP can support further strength.';
+    if(has('alphatrend buy')) return 'AlphaTrend is showing a buy condition. Continued price strength above its reference can improve confirmation.';
+  }
+  if(label==='📉 PULLBACK'){
+    if(has('pullback + bullish recovery')) return 'Price had been retracing but is now recovering strongly. If the recovery holds and a recent high is reclaimed, the pullback may be ending and a new upward leg can develop.';
+    if(has('healthy bullish pullback')) return 'Price is retracing within an existing bullish structure without a clear breakdown. This can create a better-risk entry area if support holds and buyers return.';
+    if(has('pullback to ema20')) return 'Price is pulling back toward EMA20 while the bullish context remains intact. A successful hold and bullish reaction from this area can support continuation.';
+    if(has('deep pullback')) return 'The retracement is relatively deep, so the bullish setup needs caution. A recovery from support can restore strength, while further weakness can damage the structure.';
+    if(has('pullback breakdown')) return 'The pullback has broken below an important short-term reference. This can signal weakening bullish structure and a deeper correction unless price quickly reclaims the level.';
+  }
+  if(label==='🏔️ DONCHIAN 20D / 55D'){
+    return 'Price is interacting with a recent trading-range boundary. A sustained breakout can attract fresh buying, while rejection can send price back into the range.';
+  }
+  if(label==='⚡ SHORT-TERM BREAKOUT'){
+    return 'The stock is attempting to move beyond its recent short-term range. Holding the breakout can support continuation; failure can result in a quick pullback.';
+  }
+  if(label==='🚀 TREND + BREAKOUT + VOLUME'){
+    if(has('strong trend')) return 'Bullish trend, breakout and strong volume are aligning. This is a stronger confirmation setup, although the breakout still needs to hold.';
+    return 'Trend, breakout and participation are aligning. Continued volume and a sustained breakout can support further upside.';
+  }
+  if(label==='💥 MOMENTUM + VOLUME'){
+    if(has('strong momentum')) return 'Momentum is strong and supported by active volume. This combination can help the move continue if price remains above key support.';
+    return 'Momentum and participation are positive. Stronger volume follow-through can provide additional confirmation.';
+  }
+  return explanations[label]||'This signal describes the current price and market condition. Continued strength can support the move, while a loss of the key level may weaken it.';
+}
+
+function signalWithTip(text, explanation){
+  if(!text || text==='—' || !explanation) return text;
+  return `<span class="signal-tip" tabindex="0">${escapeHtml(text)}<span class="signal-tip-box">${escapeHtml(explanation)}</span></span>`;
+}
+function addSignalTipToCell(cell,label){
+  if(!cell) return;
+  const value=stripHTML(cell.innerText||cell.textContent||'');
+  const exp=explanations[label];
+  if(value && value!=='—' && exp){
+    cell.innerHTML=signalWithTip(value,exp);
+  }
+}
 function escapeHtml(v){
   return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -458,28 +566,28 @@ function downloadStockDataForStock(stockName){
 
 
 const explanations={
-  'CLOSE':'Latest closing price from the processed CSV.',
-  '🎯 ENTRY PRICE':'Highest High across today and the previous four trading days. It is displayed only when it is above Stop Loss.',
-  'STOP LOSS':'Stop-loss level taken from the CSV.',
-  '🕯️ CANDLESTICK PATTERNS':'Detects bullish candlestick patterns from the available OHLC data. Multiple patterns can be shown together.',
-  '🏔️ DONCHIAN 20D / 55D':'Uses the CSV 20D and 55D Turtle/Donchian levels to identify breakouts or tests.',
-  '⚡ SHORT-TERM BREAKOUT':"Checks whether today’s Close confirms a break above the previous four trading-day highs.",
-  '🔥 NEXT-DAY INTRADAY SETUP':'A screening classification using available bullish price action, volume, trend, momentum and VWAP conditions. It is not a prediction.',
-  '📊 CANDLE + VOLUME':'Checks candle direction and strength together with volume participation.',
-  '🟢 TIGHT RANGE + DIRECTIONAL BIAS':'Uses the five-day High/Low range to identify a tight range and its directional bias.',
-  '🧲 WICK ABSORPTION':'Looks for a strong wick indicating price pressure being absorbed.',
-  '🧲 WICK REJECTION':'Looks for a wick showing rejection of a price area.',
-  '🚀 REVERSAL / CONTINUATION':'Uses recent price action to classify a bullish reversal or bullish continuation.',
-  '💥 MOMENTUM + VOLUME':'Combines momentum conditions with volume participation.',
-  '🚀 TREND + BREAKOUT + VOLUME':'Combines bullish EMA trend, breakout and volume participation.',
-  '🔎 PRICE ACTION':'Checks whether today’s candle is bullish and whether its body is strong.',
-  '🧭 MARKET STRUCTURE':'Checks Higher High, Higher Low and 5-day breakout structure.',
-  '📈 TREND / MOVING AVERAGES':'Checks EMA alignment and bullish EMA crossovers.',
-  '⚡ MOMENTUM':'Combines RSI, Stochastic, MACD, CCI, ADX and bullish trend-strength conditions.',
-  '📊 VOLUME':'Shows the highest Volume SMA exceeded and the corresponding volume expansion.',
-  '🎯 PIVOT / SUPPORT':'Shows where the Close sits within Pivot, resistance and support levels.',
-  '🎯 VWAP / ALPHATREND':'Checks price against VWAP and AlphaTrend conditions.',
-  '📥 DOWNLOAD':'Downloads only the complete main-page screener data for this individual stock.'
+  'CLOSE':'Shows where the stock has finished the current session. A strong close can support bullish follow-through, while a weak close may signal hesitation.',
+  '🎯 ENTRY PRICE':'The reference entry is based on the highest high of the last five trading days. A move above this level can confirm fresh buying strength; the level is shown only when it remains above Stop Loss.',
+  'STOP LOSS':'The defined risk level for the setup. If price moves below it, the bullish idea may be weakening and the setup needs reassessment.',
+  '🕯️ CANDLESTICK PATTERNS':'Shows the bullish candle pattern that has formed. The pattern describes what buyers and sellers are doing now and can indicate a possible reversal or continuation when supported by the surrounding price structure.',
+  '🏔️ DONCHIAN 20D / 55D':'Shows whether price is approaching or breaking an important recent trading range. A breakout can lead to further upside if buying participation continues.',
+  '⚡ SHORT-TERM BREAKOUT':'Shows a break of the recent short-term price range. A confirmed close above the range can attract fresh buying, while failure to hold the breakout can lead to a pullback.',
+  '🔥 NEXT-DAY INTRADAY SETUP':'Highlights whether the current combination of price action, structure, trend, momentum and participation creates a favourable setup to watch for the next session. It is a setup classification, not a prediction.',
+  '📊 CANDLE + VOLUME':'Shows whether buyers are producing a strong bullish candle and whether trading participation supports that move. Strong candle strength with expanding volume can improve the quality of the move.',
+  '🟢 TIGHT RANGE + DIRECTIONAL BIAS':'Shows that price has been trading in a relatively tight five-day range and identifies the current directional bias. A break from a tight range can produce a faster move.',
+  '🧲 WICK ABSORPTION':'A long wick indicates that price moved into an area but was pushed back. This can suggest that the opposing side absorbed the pressure and may support a move in the other direction.',
+  '🧲 WICK REJECTION':'Shows that price was rejected from a higher or lower area. Continued rejection can strengthen the nearby support or resistance zone and may lead to a reversal or continuation move.',
+  '🚀 REVERSAL / CONTINUATION':'Uses recent price action to determine whether bullish pressure is turning a previous decline upward or continuing an existing bullish move.',
+  '💥 MOMENTUM + VOLUME':'Combines momentum strength with trading participation. Strong momentum backed by expanding volume can indicate that the move has broader market participation.',
+  '🚀 TREND + BREAKOUT + VOLUME':'Looks for bullish trend alignment, a price breakout and supporting volume at the same time. When all three agree, the move has stronger confirmation, although the breakout can still fail.',
+  '🔎 PRICE ACTION':'Shows whether the current candle is bullish and whether its body is strong. A strong bullish body indicates stronger buying control during the session.',
+  '🧭 MARKET STRUCTURE':'Shows whether price is forming Higher Highs, Higher Lows and/or breaking the recent five-day range. Stronger combinations indicate a healthier bullish structure.',
+  '📈 TREND / MOVING AVERAGES':'Shows how the shorter and longer moving averages are aligned and whether bullish crossovers are occurring. Strong alignment can support continuation, while a crossover can signal improving trend conditions.',
+  '⚡ MOMENTUM':'Combines momentum indicators to judge whether buying pressure is strengthening. Stronger confirmation across several momentum measures can support further upside, but very strong momentum can also become stretched.',
+  '📊 VOLUME':'Shows the highest volume average that current volume is exceeding and the size of the expansion. Rising volume confirms participation; unusually high volume can support a breakout but may also accompany sharp volatility.',
+  '🎯 PIVOT / SUPPORT':'Shows where the current price sits within the pivot, resistance and support structure. Holding above a level can support the next move higher, while losing support can increase downside pressure.',
+  '🎯 VWAP / ALPHATREND':'Shows whether price is above VWAP and/or the AlphaTrend reference with a buy condition. Agreement between these signals can support bullish continuation; losing them can weaken the setup.',
+  '📥 DOWNLOAD':'Downloads the complete main-page analysis for this individual stock.'
 };
 
 function render(){
@@ -1163,6 +1271,48 @@ function render(){
 
 
   // Final per-stock download row: exports ONLY the complete main-page screener data.
+  rows.push(['📉 PULLBACK',r=>{
+    const x=calculate(r);
+    const close=x.c, prevClose=num(r,'1d ago  close');
+    const ema20=num(r,'EMA 20');
+    const todayHigh=num(r,'Today high'), todayLow=num(r,'Today low');
+    const prevHigh=num(r,'1d ago high'), prevLow=num(r,'1d ago  low');
+
+    if(!Number.isFinite(close)||!Number.isFinite(prevClose)||
+       !Number.isFinite(todayHigh)||!Number.isFinite(todayLow)) return dash();
+
+    const fiveHigh=Math.max(
+      num(r,'1d ago high'),num(r,'2d ago  high'),
+      num(r,'3d ago high'),num(r,'4d ago high')
+    );
+
+    const hh=todayHigh>prevHigh;
+    const hl=todayLow>prevLow;
+    const fiveBreak=Number.isFinite(fiveHigh)&&todayHigh>fiveHigh;
+    const emaBull=Number.isFinite(ema20)&&close>ema20;
+    const bullishContext=hh||hl||fiveBreak||emaBull;
+    const retracing=close<prevClose || todayHigh<prevHigh;
+
+    if(!bullishContext || !retracing) return dash();
+
+    const range=todayHigh-todayLow;
+    const recovery=range>0 && close>=todayLow+range*0.65 && close>prevClose;
+    const nearEma20=Number.isFinite(ema20)&&Math.abs(close-ema20)/ema20<=0.015;
+    const emaBroken=Number.isFinite(ema20)&&close<ema20;
+    const deep=range>0 && (close<=todayLow+range*0.30 || emaBroken);
+
+    if(recovery) return yes('🚀 Pullback + Bullish Recovery',
+      'Price has shown recent weakness but is recovering strongly.');
+    if(deep && emaBroken) return yes('🔻 Pullback Breakdown',
+      'The pullback has moved below EMA20, indicating weakening short-term structure.');
+    if(deep) return yes('📉 Deep Pullback',
+      'The retracement is relatively deep and needs caution.');
+    if(nearEma20) return yes('🎯 Pullback to EMA20',
+      'Price is retracing toward EMA20 while the bullish context remains intact.');
+    return yes('🟢 Healthy Bullish Pullback',
+      'Price is retracing within an existing bullish context without a clear breakdown.');
+  }]);
+
   rows.push(['📥 DOWNLOAD',r=>{
     const name=stock(r)||'STOCK';
     return `<div class="download-cell"><button class="download-btn" data-stock-download="${escapeHtml(name)}">📥 Download</button></div>`;
@@ -1171,11 +1321,18 @@ function render(){
   rows.forEach(([label,fn],idx)=>{
     const tr=document.createElement('tr');
     const th=document.createElement('th');
-    if(explanations[label]){
-      th.innerHTML=`<span class="tip">${escapeHtml(label)}<span class="tip-icon">ⓘ</span><span class="tip-box">${escapeHtml(explanations[label])}</span></span>`;
-    }else th.textContent=label;
+    th.textContent=label;
     tr.appendChild(th);
-    list.forEach(r=>{const td=document.createElement('td');td.innerHTML=fn(r);tr.appendChild(td)});
+    list.forEach(r=>{
+      const td=document.createElement('td');
+      td.innerHTML=fn(r);
+      const signalValue=stripHTML(td.innerText||td.textContent||'');
+      const signalExplanation=getSignalNarration(label,signalValue);
+      if(signalValue && signalValue!=='—' && signalExplanation){
+        td.innerHTML=signalWithTip(signalValue,signalExplanation);
+      }
+      tr.appendChild(td);
+    });
     tbody.appendChild(tr);
   });
   if(typeof refreshHorizontalScroll==='function') requestAnimationFrame(refreshHorizontalScroll);
@@ -1225,9 +1382,27 @@ processBtn.addEventListener('click',()=>{
 search.addEventListener('input',()=>{if(rawData.length)render()});
 
 tbody.addEventListener('click',e=>{
+  const tip=e.target.closest('.signal-tip');
+  if(tip){
+    e.stopPropagation();
+    document.querySelectorAll('.signal-tip-box.show').forEach(x=>x.classList.remove('show'));
+    const box=tip.querySelector('.signal-tip-box');
+    if(box){
+      const rect=tip.getBoundingClientRect();
+      box.classList.add('show');
+      box.style.left=Math.max(8,Math.min(window.innerWidth-310,rect.left))+'px';
+      box.style.top=Math.min(window.innerHeight-110,rect.bottom+7)+'px';
+    }
+    return;
+  }
+
   const btn=e.target.closest('.download-btn');
   if(btn) downloadStockDataForStock(btn.dataset.stockDownload);
 });
+document.addEventListener('click',()=>document.querySelectorAll('.signal-tip-box.show').forEach(x=>x.classList.remove('show')));
+
+
+
 
 function setupHorizontalScroll(){
   const wrap=document.getElementById('tableWrap');
