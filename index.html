@@ -111,22 +111,71 @@ function dash(){return '<span class="dash">—</span>'}
 function calculate(r){
   const o=num(r,'Today open'),h=num(r,'Today high'),l=num(r,'Today low'),c=num(r,'Today close');
   const po=num(r,'1d ago open'),ph=num(r,'1d ago high'),pl=num(r,'1d ago low'),pc=num(r,'1d ago close');
-  const p2o=num(r,'2d ago open'),p2c=num(r,'2d ago close');
+  const p2o=num(r,'2d ago open'),p2c=num(r,'2d ago close'),p2h=num(r,'2d ago high'),p2l=num(r,'2d ago low');
   const vol=num(r,'Volume'),v20=num(r,'Volume 20 SMA'),ema9=num(r,'EMA 9'),ema20=num(r,'EMA 20'),ema50=num(r,'EMA 50'),ema100=num(r,'EMA 100'),ema200=num(r,'EMA 200');
   const e9p=num(r,'1d ago EMA 9'),e20p=num(r,'1d ago EMA 20'),e50p=num(r,'1d ago EMA 50'),e100p=num(r,'1d ago EMA 100'),e200p=num(r,'1d ago EMA 200');
   const rsi=num(r,'RSI'),macd=num(r,'MACD'),cci=num(r,'CCI'),st=num(r,'Stochastic'),adx=num(r,'ADX'),vwap=num(r,'VWAP'),atr=num(r,'ATR'),cbs=num(r,'Candle Body Strength'),alpha=num(r,'AlphaTrend Buy Marker'),alphaLine=num(r,'AlphaTrend Line');
   const range=h-l, body=Math.abs(c-o), lower=Math.min(o,c)-l, upper=h-Math.max(o,c);
-  const bullish=c>o, prevBear=pc<po;
+  const bullish=c>o, bearish=c<o, prevBear=pc<po, prevBull=pc>po;
+
+  // Existing bullish patterns
   const engulf=bullish&&prevBear&&c>=po&&o<=pc;
   const hammer=bullish&&body>0&&lower>=2*body&&upper<=body;
   const piercing=bullish&&prevBear&&o<pc&&c>(po+pc)/2&&c<po;
-  const morning=p2c<p2o&&Math.abs(po-pc)<Math.abs(p2o-p2c)*.6&&bullish&&c>(p2o+p2c)/2;
   const tweezer=Math.abs(l-pl)/Math.max(Math.abs(pl),1)<.003&&bullish;
+
+  // Additional bullish patterns adapted directly from the supplied STWP
+  // Candlestick Patterns Reversal Engine logic.
+  const prevBody=Math.abs(po-pc), firstBody=Math.abs(p2o-p2c);
+  const prevRange=Math.max(ph-pl,0), firstRange=Math.max(p2h-p2l,0), currRange=Math.max(h-l,0);
+  const prevBodyPct=prevRange>0 ? prevBody/prevRange*100 : 0;
+  const firstBodyPct=firstRange>0 ? firstBody/firstRange*100 : 0;
+  const currBodyPct=currRange>0 ? body/currRange*100 : 0;
+
+  // Bullish Counter Attack
+  const closeMatch = c>=pl && c<=po;
+  const openCondition = o<=pc;
+  const counterAttack = prevBear && bullish && closeMatch && openCondition;
+
+  // Bullish Above The Stomach
+  const midpoint = (po+pc)/2;
+  const aboveStomach = prevBear && bullish && o>midpoint && prevBodyPct>=40;
+
+  // Three Inside Up
+  const firstBearish = p2c<p2o;
+  const secondBullish = pc>po;
+  const secondBody = prevBody;
+  const secondInsideFirst = po>p2c && pc<p2o;
+  const threeInsideUp = firstBearish && secondBullish && secondInsideFirst && firstBody>secondBody && bullish && c>p2o;
+
+  // Three Outside Up
+  const secondEngulfsFirst = po<=p2c && pc>=p2o;
+  const threeOutsideUp = firstBearish && secondBullish && secondEngulfsFirst && secondBody>firstBody && bullish && c>p2o;
+
+  // Three White Soldiers
+  const threeWhiteSoldiers =
+    p2c>p2o && pc>po && bullish &&
+    firstBodyPct>=60 && prevBodyPct>=60 && currBodyPct>=60 &&
+    pc>p2c && c>pc &&
+    ph>p2h && h>ph &&
+    pl>p2l && l>pl;
+
+  // Morning Star — use the supplied script's stricter three-candle logic:
+  // strong bearish candle -> small body with gap down -> bullish recovery
+  // closing above the midpoint of the first candle's real body.
+  const firstStrongMorning = firstBody > firstRange*0.5;
+  const secondSmallMorning = prevBody < firstBody*0.6;
+  const gapDownMorning = po < p2c && pc < p2c;
+  const thirdRecoveryMorning = c > (p2o+p2c)/2;
+  const morning = firstBearish && firstStrongMorning && secondSmallMorning && gapDownMorning && bullish && thirdRecoveryMorning;
+
+  // Bullish Marubozu — strong bullish body with very small total wick.
+  const bullishMarubozu = bullish && currRange>0 && body/currRange>=0.90;
   const hh=h>ph,hl=l>pl;
   const pivot=(ph+pl+pc)/3,r1=2*pivot-pl,r2=pivot+(ph-pl),r3=ph+2*(pivot-pl),s1=2*pivot-ph,s2=pivot-(ph-pl),s3=pl-2*(ph-pivot);
   return {
     o,h,l,c,sl:field(r,'Stop loss'),range,body,lower,upper,atr,vol,v20,rsi,macd,cci,st,adx,vwap,alpha,alphaLine,cbs,
-    bullish,engulf,hammer,piercing,morning,tweezer,hh,hl,highBreak:hh,
+    bullish,engulf,hammer,piercing,morning,tweezer,counterAttack,aboveStomach,threeInsideUp,threeOutsideUp,threeWhiteSoldiers,bullishMarubozu,hh,hl,highBreak:hh,
     closeE9:c>ema9,closeE20:c>ema20,closeE50:c>ema50,closeE100:c>ema100,closeE200:c>ema200,
     e920:ema9>ema20,e2050:ema20>ema50,e50100:ema50>ema100,e100200:ema100>ema200,
     stack:ema9>ema20>ema50>ema100>ema200,
@@ -569,7 +618,7 @@ const explanations={
   'CLOSE':'Shows where the stock has finished the current session. A strong close can support bullish follow-through, while a weak close may signal hesitation.',
   '🎯 ENTRY PRICE':'The reference entry is based on the highest high of the last five trading days. A move above this level can confirm fresh buying strength; the level is shown only when it remains above Stop Loss.',
   'STOP LOSS':'The defined risk level for the setup. If price moves below it, the bullish idea may be weakening and the setup needs reassessment.',
-  '🕯️ CANDLESTICK PATTERNS':'Shows the bullish candle pattern that has formed. The pattern describes what buyers and sellers are doing now and can indicate a possible reversal or continuation when supported by the surrounding price structure.',
+  '🕯️ CANDLESTICK PATTERNS':'Shows all bullish candlestick patterns detected in the recent OHLC sequence. Multiple patterns may appear together. They describe what buyers and sellers are doing and can point to a possible reversal or continuation when price follows through.',
   '🏔️ DONCHIAN 20D / 55D':'Shows whether price is approaching or breaking an important recent trading range. A breakout can lead to further upside if buying participation continues.',
   '⚡ SHORT-TERM BREAKOUT':'Shows a break of the recent short-term price range. A confirmed close above the range can attract fresh buying, while failure to hold the breakout can lead to a pullback.',
   '🔥 NEXT-DAY INTRADAY SETUP':'Highlights whether the current combination of price action, structure, trend, momentum and participation creates a favourable setup to watch for the next session. It is a setup classification, not a prediction.',
@@ -662,13 +711,15 @@ function render(){
     if(x.morning) patterns.push('🌅 Morning Star');
     if(x.piercing) patterns.push('🟢 Piercing Pattern');
     if(x.tweezer) patterns.push('⚖️ Bullish Tweezer Bottom');
-
-    // Bullish Marubozu: very strong bullish body with only small total wick.
-    if(x.bullish && x.range>0 && x.body/x.range>=0.90)
-      patterns.push('🟢 Bullish Marubozu');
+    if(x.counterAttack) patterns.push('🟢 Bullish Counter Attack');
+    if(x.aboveStomach) patterns.push('📈 Above The Stomach');
+    if(x.threeInsideUp) patterns.push('🔄 Three Inside Up');
+    if(x.threeOutsideUp) patterns.push('🚀 Three Outside Up');
+    if(x.threeWhiteSoldiers) patterns.push('🪖 Three White Soldiers');
+    if(x.bullishMarubozu) patterns.push('🟢 Bullish Marubozu');
 
     return patterns.length ? yes(patterns.join(' · '),
-      'All bullish candlestick patterns detected from the available OHLC data are displayed together.') : dash();
+      'Multiple bullish candlestick patterns can appear together. These patterns describe the current buyer-seller behaviour and may signal reversal or continuation when price follows through.') : dash();
   }]);
 
   rows.push(['🏔️ DONCHIAN 20D / 55D',r=>{
@@ -844,6 +895,12 @@ function render(){
     if(x.piercing) patterns.push('🟢 Piercing Pattern');
     if(x.morning) patterns.push('🌅 Morning Star');
     if(x.tweezer) patterns.push('⚖️ Tweezer Bottom');
+    if(x.counterAttack) patterns.push('🟢 Bullish Counter Attack');
+    if(x.aboveStomach) patterns.push('📈 Above The Stomach');
+    if(x.threeInsideUp) patterns.push('🔄 Three Inside Up');
+    if(x.threeOutsideUp) patterns.push('🚀 Three Outside Up');
+    if(x.threeWhiteSoldiers) patterns.push('🪖 Three White Soldiers');
+    if(x.bullishMarubozu) patterns.push('🟢 Bullish Marubozu');
 
     const priorWeakness =
       (Number.isFinite(pc)&&Number.isFinite(po)&&pc<po) ||
@@ -1328,7 +1385,8 @@ function render(){
       td.innerHTML=fn(r);
       const signalValue=stripHTML(td.innerText||td.textContent||'');
       const signalExplanation=getSignalNarration(label,signalValue);
-      if(signalValue && signalValue!=='—' && signalExplanation){
+      // Keep the Download button as a real button; do not wrap it in a tooltip.
+      if(label!=='📥 DOWNLOAD' && signalValue && signalValue!=='—' && signalExplanation){
         td.innerHTML=signalWithTip(signalValue,signalExplanation);
       }
       tr.appendChild(td);
@@ -1397,7 +1455,12 @@ tbody.addEventListener('click',e=>{
   }
 
   const btn=e.target.closest('.download-btn');
-  if(btn) downloadStockDataForStock(btn.dataset.stockDownload);
+  if(btn){
+    e.preventDefault();
+    e.stopPropagation();
+    const name=btn.getAttribute('data-stock-download');
+    if(name) downloadStockDataForStock(name);
+  }
 });
 document.addEventListener('click',()=>document.querySelectorAll('.signal-tip-box.show').forEach(x=>x.classList.remove('show')));
 
