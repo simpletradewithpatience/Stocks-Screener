@@ -205,7 +205,9 @@ function openRawDataPage(row,name){
   const pos=position;
   const entryInfo=typeof getEntryPrice==='function' ? getEntryPrice(row) : {entry:null,stop:null};
   const passAuditRows=auditRows.filter(a=>a[4]==='PASS');
+  const setupAuditRows=typeof tradeSetupAuditRows==='function' ? tradeSetupAuditRows(row) : [];
   const conditionAuditHtml=passAuditRows.length ? passAuditRows.map(a=>`<tr><td><strong>${esc(a[1])}</strong></td><td>${esc(a[2])}</td><td>${esc(a[3])}</td><td class="pass">PASS</td></tr>`).join('') : '<tr><td colspan="4">No conditions passed</td></tr>';
+  const setupAuditHtml=setupAuditRows.length ? setupAuditRows.map(a=>`<tr><td><strong>${esc(a[1])}</strong></td><td>${esc(a[2])}</td><td>${esc(a[3])}</td><td class="pass">PASS</td></tr>`).join('') : '<tr><td colspan="4">No trade setups passed</td></tr>';
   const riskPerShare=pos ? pos.riskPerShare : (Number.isFinite(entryInfo.entry)&&Number.isFinite(entryInfo.stop)?entryInfo.entry-entryInfo.stop:null);
   const calcAuditRows=[
     ['Open',calcX.o],['High',calcX.h],['Low',calcX.l],['Close',calcX.c],['Candle Range',calcX.range],['Candle Body',calcX.body],
@@ -291,6 +293,8 @@ ${position ? `<div class="tags-card"><div class="section-title" style="margin:0 
 ${score!==null ? `<div class="tags-card"><div class="section-title" style="margin:0 0 4px">⭐ STWP BULLISH SCORE</div><strong style="font-size:24px">${esc(score)}/100</strong></div>` : ''}
 <div class="section-title">🧾 TRADE + CONDITIONS AUDIT</div>
 <div class="card"><table class="audit-table"><thead><tr><th>CONDITION</th><th>REQUIRED RULE</th><th>ACTUAL DATA</th><th>RESULT</th></tr></thead><tbody>${conditionAuditHtml}</tbody></table></div>
+<div class="section-title">🎯 TRADE SETUPS</div>
+<div class="card"><table class="audit-table"><thead><tr><th>TRADE SETUP</th><th>REQUIRED RULE</th><th>ACTUAL DATA</th><th>RESULT</th></tr></thead><tbody>${setupAuditHtml}</tbody></table></div>
 <div class="section-title">📊 Key Market Data</div>
 <div class="card"><table><thead><tr><th>FIELD</th><th>VALUE</th></tr></thead>
 <tbody>${metricHtml}</tbody></table></div>
@@ -1552,6 +1556,34 @@ function auditConditionRows(r){
   add('Possible Breakout','Close*1.05 > 200 Day High AND 30 Day High < 30 Day 200 High',Number.isFinite(close)&&Number.isFinite(day200)&&Number.isFinite(day30)&&Number.isFinite(day30_200)?`Close*1.05 ${fmt(close*1.05)}; 200D ${fmt(day200)}; 30D ${fmt(day30)}; 30D-200 ${fmt(day30_200)}`:'Missing',Number.isFinite(close)&&Number.isFinite(day200)&&Number.isFinite(day30)&&Number.isFinite(day30_200)&&close*1.05>day200&&day30<day30_200);
   add('52 Week Vol Breakout','Daily Volume > Highest Single-Day Volume in 52 Weeks',Number.isFinite(vol)&&Number.isFinite(weekVol)?`${fmt(vol)} vs ${fmt(weekVol)}`:'Missing',Number.isFinite(vol)&&Number.isFinite(weekVol)&&vol>weekVol);
   add('EMA 200 Cutting','Open < EMA200 AND Close > EMA200',Number.isFinite(open)&&Number.isFinite(close)&&Number.isFinite(ema200)?`Open ${fmt(open)}; Close ${fmt(close)}; EMA200 ${fmt(ema200)}`:'Missing',Number.isFinite(open)&&Number.isFinite(close)&&Number.isFinite(ema200)&&open<ema200&&close>ema200);
+  return rows;
+}
+function tradeSetupAuditRows(r){
+  const x=calculate(r), n=(name)=>num(r,name);
+  const close=n('Today close'), open=n('Today open'), low=n('Today low'), vol=n('Volume');
+  const v20=n('Volume 20 sma'), ema9=n('EMA 9'), ema20=n('EMA 20'), ema50=n('EMA 50'), ema200=n('EMA 200'), rsi=n('RSI');
+  const cbs=n('Candle body strength'), d20=n('20d turtle'), d55=n('55d turtle'), weekHigh=n('52 week high');
+  const pOpen=n('1d ago open'), pClose=n('1d ago close');
+  const rows=[]; const add=(setup,rule,actual,pass)=>{if(pass) rows.push([stock(r),setup,rule,actual,'PASS']);};
+  const breakout20=Number.isFinite(close)&&Number.isFinite(d20)&&close>d20;
+  const breakout55=Number.isFinite(close)&&Number.isFinite(d55)&&close>d55;
+  const volExpansion=Number.isFinite(vol)&&Number.isFinite(v20)&&vol>=1.5*v20;
+  const bullish=Number.isFinite(close)&&Number.isFinite(open)&&close>open;
+  const strongUptrend=Number.isFinite(close)&&Number.isFinite(ema9)&&Number.isFinite(ema20)&&Number.isFinite(ema50)&&Number.isFinite(ema200)&&Number.isFinite(rsi)&&close>ema9&&ema9>ema20&&ema20>ema50&&ema50>ema200&&rsi>=60;
+  const priceVolumeBreakout=breakout20&&volExpansion&&bullish;
+  const bullishPullback=Number.isFinite(close)&&Number.isFinite(low)&&Number.isFinite(ema20)&&Number.isFinite(ema200)&&Number.isFinite(rsi)&&bullish&&close>ema200&&low<=ema20&&close>ema20&&rsi>=50;
+  const bullishReversal=Number.isFinite(pOpen)&&Number.isFinite(pClose)&&Number.isFinite(open)&&Number.isFinite(close)&&Number.isFinite(rsi)&&Number.isFinite(vol)&&Number.isFinite(v20)&&pClose<pOpen&&bullish&&close>pClose&&rsi>=50&&vol>=v20;
+  const structureHigh=breakout20||breakout55||(Number.isFinite(close)&&Number.isFinite(weekHigh)&&close>=weekHigh);
+  const highConviction=Number.isFinite(close)&&Number.isFinite(open)&&Number.isFinite(ema50)&&Number.isFinite(ema200)&&Number.isFinite(rsi)&&Number.isFinite(cbs)&&Number.isFinite(vol)&&Number.isFinite(v20)&&close>ema200&&ema50>ema200&&rsi>=60&&bullish&&cbs>=60&&vol>=1.5*v20&&structureHigh;
+
+  add('🚀 20D Breakout','Daily Close > 20D Turtle High',Number.isFinite(close)&&Number.isFinite(d20)?`Close ${fmt(close)} > 20D High ${fmt(d20)}`:'Missing',breakout20);
+  add('🏆 55D Breakout','Daily Close > 55D Turtle High',Number.isFinite(close)&&Number.isFinite(d55)?`Close ${fmt(close)} > 55D High ${fmt(d55)}`:'Missing',breakout55);
+  add('📈 Strong Uptrend','Close > EMA9 > EMA20 > EMA50 > EMA200 AND RSI >=60',Number.isFinite(close)&&Number.isFinite(ema9)&&Number.isFinite(ema20)&&Number.isFinite(ema50)&&Number.isFinite(ema200)&&Number.isFinite(rsi)?`Close ${fmt(close)}; EMA9 ${fmt(ema9)}; EMA20 ${fmt(ema20)}; EMA50 ${fmt(ema50)}; EMA200 ${fmt(ema200)}; RSI ${rsi.toFixed(2)}`:'Missing',strongUptrend);
+  add('🔥 Volume Expansion','Daily Volume >= 1.5x Volume 20 SMA',Number.isFinite(vol)&&Number.isFinite(v20)?`Volume ${fmt(vol)}; 20SMA ${fmt(v20)}; Ratio ${(vol/v20).toFixed(2)}x`:'Missing',volExpansion);
+  add('💥 Price + Volume Breakout','20D Breakout AND Volume >=1.5x 20SMA AND Bullish Candle',Number.isFinite(close)&&Number.isFinite(d20)&&Number.isFinite(vol)&&Number.isFinite(v20)?`20D ${breakout20?'PASS':'FAIL'}; Vol ${(vol/v20).toFixed(2)}x; Candle ${bullish?'Bullish':'Not Bullish'}`:'Missing',priceVolumeBreakout);
+  add('🎯 Bullish Pullback','Close > EMA200; Low <= EMA20; Close > EMA20; Bullish Candle; RSI >=50',Number.isFinite(close)&&Number.isFinite(low)&&Number.isFinite(ema20)&&Number.isFinite(ema200)&&Number.isFinite(rsi)?`Close ${fmt(close)}; Low ${fmt(low)}; EMA20 ${fmt(ema20)}; EMA200 ${fmt(ema200)}; RSI ${rsi.toFixed(2)}`:'Missing',bullishPullback);
+  add('🔄 Bullish Reversal','Previous bearish; current bullish; Close > previous Close; RSI >=50; Volume >= 20SMA',Number.isFinite(pOpen)&&Number.isFinite(pClose)&&Number.isFinite(open)&&Number.isFinite(close)&&Number.isFinite(rsi)&&Number.isFinite(vol)&&Number.isFinite(v20)?`Prev ${pClose<pOpen?'Bearish':'Not bearish'}; Current ${bullish?'Bullish':'Not bullish'}; Close vs prev ${close>pClose?'Higher':'Not higher'}; RSI ${rsi.toFixed(2)}; Vol ${(vol/v20).toFixed(2)}x`:'Missing',bullishReversal);
+  add('⭐ High Conviction Bullish','Close > EMA200; EMA50 > EMA200; RSI >=60; Bullish Candle; Body >=60%; Volume >=1.5x 20SMA; 20D/55D Breakout or 52W High',`Trend ${close>ema200&&ema50>ema200?'PASS':'FAIL'}; RSI ${Number.isFinite(rsi)?rsi.toFixed(2):'—'}; Body ${Number.isFinite(cbs)?cbs.toFixed(2):'—'}%; Vol ${Number.isFinite(v20)&&v20?((vol/v20).toFixed(2)+'x'):'—'}; Structure ${structureHigh?'PASS':'FAIL'}`,highConviction);
   return rows;
 }
 function xlsxColName(n){
